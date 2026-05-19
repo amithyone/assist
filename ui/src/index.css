@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-surface: #08080a;
+  --color-surface-dim: #08080a;
+  --color-surface-bright: #1a1d26;
+  --color-surface-container-lowest: #0e0e10;
+  --color-surface-container-low: #121216;
+  --color-surface-container: #18181c;
+  --color-surface-container-high: #1c1c22;
+  --color-surface-container-highest: #24242c;
+  --color-sidebar: rgba(18, 18, 22, 0.6);
+  
+  --color-on-surface: #ededed;
+  --color-on-surface-variant: #8a8f98;
+  
+  --color-primary: #5e6ad2;
+  --color-primary-hover: #6f7bf7;
+  --color-primary-container: #5e6ad2;
+  --color-secondary: #9d50bb;
+  --color-tertiary: #f59e0b;
+  
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    background: radial-gradient(
+      circle at top left,
+      rgba(94, 106, 210, 0.03),
+      transparent 40%
+    ), var(--color-surface);
+  }
+}
+
+.glass-panel {
+  background: rgba(24, 24, 28, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ai-glow {
+  box-shadow: 0 0 20px rgba(94, 106, 210, 0.15);
+}
+
+.hero-gradient {
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(94, 106, 210, 0.15),
+    transparent 50%
+  ), var(--color-surface);
+}
+
+.new-badge {
+  background: linear-gradient(135deg, #f97316, #e11d48);
+}

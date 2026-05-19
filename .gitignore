@@ -1,0 +1,15 @@
+/vendor/
+/node_modules/
+/ui/node_modules/
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+.DS_Store
+/storage/*.key
+/storage/app/.assist-installed
