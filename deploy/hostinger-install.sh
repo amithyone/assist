@@ -1,15 +1,21 @@
 #!/bin/bash
-# Hostinger shared hosting — install Laravel + Assist integration
-# Run from SSH home:  cd ~ && bash assist-pack/deploy/hostinger-install.sh
+# Hostinger — Laravel app in domain folder, web root = public_html
+# Run:  cd ~ && bash assist-pack/deploy/hostinger-install.sh
+#
+# Layout (amithyone.com):
+#   ~/domains/amithyone.com/          ← Laravel app (app/, vendor/, .env, artisan)
+#   ~/domains/amithyone.com/public_html/  ← Web root (index.php, assist/, assets)
 
 set -e
 
-APP_DIR="${APP_DIR:-$HOME/assist-laravel}"
 PACK_DIR="${PACK_DIR:-$HOME/assist-pack}"
-PUBLIC_HTML="${PUBLIC_HTML:-$HOME/public_html}"
 REPO="${REPO:-https://github.com/amithyone/assist.git}"
 
-# --- pick best PHP on Hostinger (CLI default is often 8.1) ---
+# Resolve public_html (symlink on Hostinger → domains/…/public_html)
+PUBLIC_HTML="${PUBLIC_HTML:-$HOME/public_html}"
+PUBLIC_HTML=$(readlink -f "$PUBLIC_HTML" 2>/dev/null || echo "$PUBLIC_HTML")
+APP_DIR="${APP_DIR:-$(dirname "$PUBLIC_HTML")}"
+
 find_best_php() {
   local candidates=()
   for p in \
@@ -36,20 +42,16 @@ find_best_php() {
 }
 
 PHP_BIN=$(find_best_php)
-if [ -z "$PHP_BIN" ]; then
-  echo "ERROR: No PHP binary found"
-  exit 1
-fi
+[ -n "$PHP_BIN" ] || { echo "ERROR: No PHP found"; exit 1; }
 
 PHP_MAJOR=$($PHP_BIN -r 'echo PHP_MAJOR_VERSION;')
 PHP_MINOR=$($PHP_BIN -r 'echo PHP_MINOR_VERSION;')
 LARAVEL_CONSTRAINT="laravel/laravel"
 if [ "$PHP_MAJOR" -lt 8 ] || { [ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 2 ]; }; then
-  echo "WARNING: PHP $PHP_MAJOR.$PHP_MINOR — using Laravel 10 (upgrade to PHP 8.2+ in hPanel when possible)"
+  echo "WARNING: PHP $PHP_MAJOR.$PHP_MINOR — using Laravel 10"
   LARAVEL_CONSTRAINT="laravel/laravel:^10.0"
 fi
 
-export PHP_BIN
 run_php() { "$PHP_BIN" "$@"; }
 run_composer() {
   if [ -f /usr/local/bin/composer ]; then
@@ -60,42 +62,60 @@ run_composer() {
 }
 
 echo "==> Assist Hostinger installer"
-echo "    PHP:        $PHP_BIN ($($PHP_BIN -v | head -1))"
-echo "    Laravel:    $LARAVEL_CONSTRAINT"
-echo "    App dir:    $APP_DIR"
-echo "    Public:     $PUBLIC_HTML"
+echo "    PHP:         $PHP_BIN ($($PHP_BIN -v | head -1))"
+echo "    Laravel:     $LARAVEL_CONSTRAINT"
+echo "    App (root):  $APP_DIR"
+echo "    Web (public): $PUBLIC_HTML"
 echo ""
 
-if ! command -v composer >/dev/null 2>&1 && [ ! -f /usr/local/bin/composer ]; then
-  echo "ERROR: composer not found"
-  exit 1
-fi
+command -v composer >/dev/null 2>&1 || [ -f /usr/local/bin/composer ] || { echo "ERROR: composer not found"; exit 1; }
 
-# --- clone integration pack ---
+# --- Assist pack ---
 if [ ! -d "$PACK_DIR/.git" ]; then
   echo "==> Cloning Assist pack..."
   git clone "$REPO" "$PACK_DIR"
 else
   echo "==> Updating Assist pack..."
-  cd "$PACK_DIR" && git pull && cd - >/dev/null
+  git -C "$PACK_DIR" pull
 fi
 
-# --- Laravel skeleton ---
+# --- Laravel into domain root (sibling of public_html) ---
 if [ ! -f "$APP_DIR/artisan" ]; then
-  echo "==> Creating Laravel (several minutes)..."
-  run_composer create-project "$LARAVEL_CONSTRAINT" "$APP_DIR" --no-interaction --prefer-dist
+  echo "==> Creating Laravel in domain folder (several minutes)..."
+  STAGING="$APP_DIR/.laravel-staging-$$"
+  rm -rf "$STAGING"
+  run_composer create-project "$LARAVEL_CONSTRAINT" "$STAGING" --no-interaction --prefer-dist
+
+  echo "==> Placing app files in $APP_DIR and web files in public_html..."
+  shopt -s dotglob nullglob
+  for item in "$STAGING"/*; do
+    base=$(basename "$item")
+    if [ "$base" = "public" ]; then
+      mkdir -p "$PUBLIC_HTML"
+      cp -R "$item/." "$PUBLIC_HTML/"
+    else
+      rm -rf "$APP_DIR/$base"
+      cp -R "$item" "$APP_DIR/$base"
+    fi
+  done
+  shopt -u dotglob nullglob 2>/dev/null || true
+  rm -rf "$STAGING"
 else
-  echo "==> Laravel already at $APP_DIR"
+  echo "==> Laravel already installed at $APP_DIR"
+  if [ -d "$APP_DIR/public" ]; then
+    echo "==> Refreshing public_html from Laravel public/..."
+    cp -R "$APP_DIR/public/." "$PUBLIC_HTML/"
+  fi
 fi
 
 cd "$APP_DIR"
 
-echo "==> Merging Assist files..."
+echo "==> Merging Assist integration..."
 for dir in app config database routes resources; do
   [ -d "$PACK_DIR/$dir" ] && cp -R "$PACK_DIR/$dir/." "$APP_DIR/$dir/"
 done
-mkdir -p "$APP_DIR/public/assist"
-cp -R "$PACK_DIR/public/assist/." "$APP_DIR/public/assist/" 2>/dev/null || true
+mkdir -p "$PUBLIC_HTML/assist"
+cp -R "$PACK_DIR/public/assist/." "$PUBLIC_HTML/assist/" 2>/dev/null || true
 
 if ! run_composer show laravel/sanctum >/dev/null 2>&1; then
   echo "==> Installing Sanctum..."
@@ -119,7 +139,6 @@ ASSIST_SUPPORT_EMAIL=support@assist.app
 ASSIST_SETUP_ENABLED=true
 EOF
 
-# --- routes ---
 if ! grep -q 'assist-setup.php' routes/web.php 2>/dev/null; then
   echo "==> Wiring routes..."
   cat >> routes/web.php <<'EOF'
@@ -133,10 +152,8 @@ if ! grep -q 'assist-api.php' routes/api.php 2>/dev/null; then
   printf '\nrequire base_path(\'routes/assist-api.php\');\n' >> routes/api.php
 fi
 
-# --- middleware (Laravel 11+) ---
 if [ -f bootstrap/app.php ] && ! grep -q 'AssistSetupGate' bootstrap/app.php 2>/dev/null; then
-  echo "==> Registering middleware in bootstrap/app.php..."
-  if grep -q '->withMiddleware' bootstrap/app.php; then
+  echo "==> Registering middleware..."
   run_php -r '
 $f = "bootstrap/app.php";
 $c = file_get_contents($f);
@@ -150,16 +167,11 @@ if (preg_match("/->withMiddleware\\(\\s*function\\s*\\(\\s*\\\\?Illuminate\\\\Fo
     1
   );
   file_put_contents($f, $c);
-  echo "middleware registered\n";
 }
-'
-  fi
+' 2>/dev/null || echo "    Add middleware aliases manually in bootstrap/app.php"
 fi
 
-# --- User model helpers ---
-USER_MODEL="app/Models/User.php"
-if [ -f "$USER_MODEL" ] && ! grep -q 'HasAssistPlan' "$USER_MODEL"; then
-  echo "==> Patching User model (add traits manually if this step prints a warning)..."
+if [ -f app/Models/User.php ] && ! grep -q 'HasAssistPlan' app/Models/User.php; then
   run_php -r '
 $f = "app/Models/User.php";
 $c = file_get_contents($f);
@@ -168,29 +180,30 @@ $c = str_replace("use Illuminate\\Foundation\\Auth\\User as Authenticatable;",
   "use Illuminate\\Foundation\\Auth\\User as Authenticatable;\nuse Laravel\\Sanctum\\HasApiTokens;\nuse App\\Models\\Concerns\\HasAssistPlan;", $c);
 $c = preg_replace("/(class User extends Authenticatable\s*\{)\s*(use [^;]+;)?/", "$1\n    use HasApiTokens, HasAssistPlan;", $c, 1);
 file_put_contents($f, $c);
-' 2>/dev/null || echo "    Edit app/Models/User.php — add HasApiTokens, HasAssistPlan"
+' 2>/dev/null || true
 fi
 
 chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
 
-echo "==> Linking public_html..."
-REAL_PUBLIC=$(readlink -f "$PUBLIC_HTML" 2>/dev/null || echo "$PUBLIC_HTML")
-if [ -d "$REAL_PUBLIC" ]; then
-  [ -f "$REAL_PUBLIC/index.php" ] && ! grep -q 'assist-laravel' "$REAL_PUBLIC/index.php" 2>/dev/null && \
-    mv "$REAL_PUBLIC/index.php" "$REAL_PUBLIC/index.php.bak.$(date +%s)" 2>/dev/null || true
-  rm -f "$REAL_PUBLIC/index.php" "$REAL_PUBLIC/.htaccess" 2>/dev/null || true
-  ln -sf "$APP_DIR/public/index.php" "$REAL_PUBLIC/index.php"
-  ln -sf "$APP_DIR/public/.htaccess" "$REAL_PUBLIC/.htaccess" 2>/dev/null || true
+# Block web access to sensitive dirs if .htaccess exists in domain root
+if [ ! -f "$APP_DIR/.htaccess" ]; then
+  cat > "$APP_DIR/.htaccess" <<'EOF'
+# Deny web access to Laravel files outside public_html
+Require all denied
+EOF
 fi
 
 echo ""
 echo "=============================================="
-echo " DONE — next steps"
+echo " DONE"
 echo "=============================================="
-echo "1. hPanel → PHP → set site to PHP 8.2 or 8.3 (recommended)"
-echo "2. hPanel → Databases → create MySQL DB"
-echo "3. Browser: https://amithyone.com/assist/setup"
-echo "   OR: cd $APP_DIR && $PHP_BIN artisan migrate --force"
+echo "  Laravel app:  $APP_DIR"
+echo "  Website root: $PUBLIC_HTML  (public_html)"
 echo ""
-echo "PHP for artisan: $PHP_BIN"
+echo "1. hPanel → PHP 8.2+ for amithyone.com"
+echo "2. hPanel → Databases → create MySQL"
+echo "3. https://amithyone.com/assist/setup"
+echo ""
+echo "  cd $APP_DIR"
+echo "  $PHP_BIN artisan migrate --force"
 echo "=============================================="

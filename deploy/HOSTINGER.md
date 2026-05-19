@@ -1,8 +1,12 @@
 # Deploy Assist on Hostinger (SSH)
 
-You are on: `u429468666@77.37.37.190` — home folder `~/public_html`.
+You are on Hostinger — web root is **`public_html`** (usually `~/domains/amithyone.com/public_html`).
 
-The GitHub repo **is not a full website by itself**. This script builds Laravel + Assist on the server.
+The installer puts:
+- **Laravel app** in the **domain folder** (parent of `public_html`) — `app/`, `vendor/`, `.env`, `artisan`
+- **Website files** in **`public_html`** — `index.php`, `assist/`, etc.
+
+It does **not** use `~/assist-laravel`.
 
 ## Quick install (copy-paste in SSH)
 
@@ -24,7 +28,7 @@ bash assist-pack/deploy/hostinger-install.sh
 
 ### 1. Register middleware (one-time)
 
-Edit `~/assist-laravel/bootstrap/app.php`. Inside `withMiddleware`, add:
+Edit `~/domains/amithyone.com/bootstrap/app.php` (parent of `public_html`). Inside `withMiddleware`, add:
 
 ```php
 $middleware->alias([
@@ -35,7 +39,7 @@ $middleware->alias([
 
 ### 2. User model (one-time)
 
-In `~/assist-laravel/app/Models/User.php`:
+In `~/domains/amithyone.com/app/Models/User.php`:
 
 ```php
 use Laravel\Sanctum\HasApiTokens;
@@ -67,10 +71,10 @@ Enter MySQL credentials → **Install & run migrations**.
 ### 5. Or via SSH
 
 ```bash
-cd ~/assist-laravel
+cd ~/domains/amithyone.com   # or: cd "$(dirname $(readlink -f ~/public_html))"
 nano .env   # set DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD
-php artisan migrate --force
-php artisan db:seed --class=AssistPlanSeeder --force
+php83 artisan migrate --force 2>/dev/null || php artisan migrate --force
+php83 artisan db:seed --class=AssistPlanSeeder --force
 ```
 
 ## Check what’s in public_html now
