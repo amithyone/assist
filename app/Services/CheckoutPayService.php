@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
-use App\Models\UserPlan;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class CheckoutPayService
 {
+    public function __construct(
+        protected PaymentActivationService $activation
+    ) {}
     public function createPaymentRequest(User $user, Plan $plan, string $currency = 'ngn'): Payment
     {
         $currency = strtolower($currency);
@@ -43,6 +45,7 @@ class CheckoutPayService
         return Payment::create([
             'user_id' => $user->id,
             'plan_slug' => $plan->slug,
+            'gateway' => 'checkoutpay',
             'transaction_id' => $data['transaction_id'] ?? ('pending-'.uniqid()),
             'external_reference' => $externalRef,
             'amount' => $amount,
@@ -88,29 +91,7 @@ class CheckoutPayService
             return null;
         }
 
-        $payment->update([
-            'status' => 'approved',
-            'approved_at' => now(),
-            'checkout_payload' => array_merge($payment->checkout_payload ?? [], ['webhook' => $webhook]),
-        ]);
-
-        $plan = Plan::where('slug', $payment->plan_slug)->where('is_active', true)->first();
-        if (! $plan) {
-            return $payment;
-        }
-
-        $user = $payment->user;
-        $user->userPlans()->where('status', 'active')->update(['status' => 'cancelled', 'ends_at' => now()]);
-
-        UserPlan::create([
-            'user_id' => $user->id,
-            'plan_id' => $plan->id,
-            'status' => 'active',
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-        ]);
-
-        return $payment;
+        return $this->activation->approve($payment, ['webhook' => $webhook]);
     }
 
     protected function request(string $method, string $path, array $body = []): array

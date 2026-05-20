@@ -1,9 +1,8 @@
 @extends('layouts.assist')
 
-@section('title', 'Home')
-
 @section('content')
     @include('assist.sections.hero')
+    @include('assist.sections.philosophy')
     @include('assist.sections.editing-engine')
     @include('assist.sections.features')
     @include('assist.sections.workspace')

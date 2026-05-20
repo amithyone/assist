@@ -23,7 +23,65 @@ class AssistSystemAdminController extends Controller
             'lockFile' => $this->installer->lockFilePath(),
             'migrationStatus' => $status,
             'requirements' => $this->installer->requirements(),
+            'payment' => $this->installer->paymentSettingsForAdmin(),
         ]);
+    }
+
+    public function savePaymentGateway(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'payment_gateway' => 'required|in:checkoutpay,paystack',
+        ]);
+        $this->installer->savePaymentGateway($data['payment_gateway']);
+        $this->installer->refreshConfig();
+
+        return back()->with('status', 'Default payment gateway saved.');
+    }
+
+    public function saveCheckout(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'checkout_base_url' => 'required|url|max:255',
+            'checkout_api_key' => 'nullable|string|max:255',
+            'checkout_webhook_url' => 'required|url|max:500',
+            'checkout_dev_program_partner_id' => 'nullable|integer',
+        ]);
+
+        $checkout = [
+            'base_url' => $data['checkout_base_url'],
+            'webhook_url' => $data['checkout_webhook_url'],
+            'dev_program_partner_id' => $data['checkout_dev_program_partner_id'] ?? '',
+        ];
+        if (! empty($data['checkout_api_key']) && ! str_contains($data['checkout_api_key'], '••')) {
+            $checkout['api_key'] = $data['checkout_api_key'];
+        }
+
+        $this->installer->saveCheckoutEnvironment($checkout);
+        $this->installer->refreshConfig();
+
+        return back()->with('status', 'CheckoutPay settings saved.');
+    }
+
+    public function savePaystack(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'paystack_public_key' => 'nullable|string|max:255',
+            'paystack_secret_key' => 'nullable|string|max:255',
+            'paystack_webhook_url' => 'required|url|max:500',
+        ]);
+
+        $paystack = [
+            'public_key' => $data['paystack_public_key'] ?? '',
+            'webhook_url' => $data['paystack_webhook_url'],
+        ];
+        if (! empty($data['paystack_secret_key']) && ! str_contains($data['paystack_secret_key'], '••')) {
+            $paystack['secret_key'] = $data['paystack_secret_key'];
+        }
+
+        $this->installer->savePaystackEnvironment($paystack);
+        $this->installer->refreshConfig();
+
+        return back()->with('status', 'Paystack settings saved.');
     }
 
     public function migrate(Request $request): RedirectResponse

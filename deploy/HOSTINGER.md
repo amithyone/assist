@@ -123,6 +123,7 @@ In **hPanel → Websites → Manage → Domains → Document root**, set:
 | `/assist/setup` 404 | Middleware + routes in `routes/web.php` |
 | DB connection failed | Use hPanel DB host (often `localhost`), not `127.0.0.1` |
 | White page | `APP_DEBUG=true` in `.env`, check `storage/logs/laravel.log` |
+| CMS images broken on site | Run `php artisan assist:publish-site-media` — uploads go to `public_html/assist/site/` (Hostinger web root; no `storage:link` required). If you uploaded before this fix: `cp -r public/assist/site/* public_html/assist/site/` then clear cache. |
 
 ## API for desktop app
 

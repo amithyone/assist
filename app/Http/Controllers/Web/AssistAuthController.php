@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\UserPlan;
+use App\Services\SiteContentService;
 use App\Services\UsageService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -17,9 +18,13 @@ use Illuminate\View\View;
 
 class AssistAuthController extends Controller
 {
+    public function __construct(
+        protected SiteContentService $content
+    ) {}
+
     public function showLogin(): View
     {
-        return view('assist.auth.login');
+        return view('assist.auth.login', $this->content->pageViewData('login'));
     }
 
     public function login(Request $request): RedirectResponse
@@ -42,7 +47,7 @@ class AssistAuthController extends Controller
 
     public function showRegister(): View
     {
-        return view('assist.auth.register');
+        return view('assist.auth.register', $this->content->pageViewData('register'));
     }
 
     public function register(Request $request): RedirectResponse
@@ -91,7 +96,7 @@ class AssistAuthController extends Controller
 
     public function showForgotPassword(): View
     {
-        return view('assist.auth.forgot-password');
+        return view('assist.auth.forgot-password', $this->content->pageViewData('forgot_password'));
     }
 
     public function sendResetLink(Request $request): RedirectResponse
@@ -107,10 +112,13 @@ class AssistAuthController extends Controller
 
     public function showResetPassword(Request $request, string $token): View
     {
-        return view('assist.auth.reset-password', [
-            'token' => $token,
-            'email' => $request->query('email', old('email')),
-        ]);
+        return view('assist.auth.reset-password', array_merge(
+            $this->content->pageViewData('reset_password'),
+            [
+                'token' => $token,
+                'email' => $request->query('email', old('email')),
+            ]
+        ));
     }
 
     public function resetPassword(Request $request): RedirectResponse
@@ -134,7 +142,7 @@ class AssistAuthController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('assist.login')->with('status', __($status))
+            ? redirect()->route('login')->with('status', __($status))
             : back()->withErrors(['email' => [__($status)]]);
     }
 

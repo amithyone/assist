@@ -1,12 +1,12 @@
 @extends('layouts.assist')
-@section('title', 'Reset password')
 @section('content')
+@php $i = $intro ?? []; @endphp
 <div class="assist-auth-wrap">
     <div class="glass-panel assist-auth-card">
         <img src="{{ asset('assist/assist-logo.png') }}" alt="Assist" class="assist-auth-logo">
 
-        <h1>Choose a new password</h1>
-        <p class="assist-auth-sub">Enter your new password below</p>
+        <h1>{{ $i['heading'] ?? 'Choose a new password' }}</h1>
+        <p class="assist-auth-sub">{{ $i['subheading'] ?? 'Enter your new password below' }}</p>
         <x-assist.alert />
         <form method="POST" action="{{ route('assist.password.update') }}">
             @csrf
@@ -18,5 +18,4 @@
         </form>
     </div>
 </div>
-
 @endsection

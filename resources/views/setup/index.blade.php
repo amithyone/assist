@@ -60,17 +60,34 @@
             <x-assist.input label="From address" name="mail_from_address" type="email" :value="old('mail_from_address')" />
             <x-assist.input label="From name" name="mail_from_name" :value="old('mail_from_name', 'Assist')" />
 
-            <h2 style="font-size: 14px; font-weight: 700; margin: 24px 0 16px;">4. CheckoutPay</h2>
-            <x-assist.input label="API base URL" name="checkout_base_url" type="url" :value="old('checkout_base_url', 'https://check-outpay.com/api/v1')" />
+            <h2 style="font-size: 14px; font-weight: 700; margin: 24px 0 16px;">4. Payment gateways</h2>
+            <div class="assist-field">
+                <label for="payment_gateway">Default gateway</label>
+                <select id="payment_gateway" name="payment_gateway" class="assist-select">
+                    <option value="checkoutpay" @selected(old('payment_gateway', $payment['default_gateway'] ?? 'checkoutpay') === 'checkoutpay')>CheckoutPay</option>
+                    <option value="paystack" @selected(old('payment_gateway', $payment['default_gateway'] ?? '') === 'paystack')>Paystack</option>
+                </select>
+            </div>
+            <p class="assist-text-muted" style="font-size: 12px; margin-bottom: 12px;">CheckoutPay</p>
+            <x-assist.input label="API base URL" name="checkout_base_url" type="url" :value="old('checkout_base_url', $payment['checkout']['base_url'] ?? 'https://check-outpay.com/api/v1')" />
             <x-assist.input label="API key (X-API-Key)" name="checkout_api_key" :value="old('checkout_api_key')" />
-            <x-assist.input label="Webhook URL (approve in CheckoutPay dashboard)" name="checkout_webhook_url" type="url" :value="old('checkout_webhook_url', $defaultWebhookUrl)" />
-            <x-assist.input label="Developer program partner ID (optional)" name="checkout_dev_program_partner_id" :value="old('checkout_dev_program_partner_id')" />
+            <x-assist.input label="CheckoutPay webhook URL" name="checkout_webhook_url" type="url" :value="old('checkout_webhook_url', $payment['checkout']['webhook_url'] ?? '')" />
+            <x-assist.input label="Developer program partner ID (optional)" name="checkout_dev_program_partner_id" :value="old('checkout_dev_program_partner_id', $payment['checkout']['dev_program_partner_id'] ?? '')" />
+            <p class="assist-text-muted" style="font-size: 12px; margin: 16px 0 12px;">Paystack (NGN card/USSD)</p>
+            <x-assist.input label="Public key" name="paystack_public_key" :value="old('paystack_public_key', $payment['paystack']['public_key'] ?? '')" />
+            <x-assist.input label="Secret key" name="paystack_secret_key" type="password" />
+            <x-assist.input label="Paystack webhook URL" name="paystack_webhook_url" type="url" :value="old('paystack_webhook_url', $payment['paystack']['webhook_url'] ?? '')" />
 
             <h2 style="font-size: 14px; font-weight: 700; margin: 24px 0 16px;">5. Admin account</h2>
             <x-assist.input label="Admin name" name="admin_name" :value="old('admin_name', 'Admin')" required />
             <x-assist.input label="Admin email" name="admin_email" type="email" :value="old('admin_email')" required />
             <x-assist.input label="Admin password" name="admin_password" type="password" required />
             <x-assist.input label="Confirm password" name="admin_password_confirmation" type="password" required />
+
+            <label class="assist-checkbox-row">
+                <input type="checkbox" name="fresh_install" value="1" @checked(old('fresh_install', true))>
+                Fresh install — drop all existing tables in this database, then migrate (recommended for empty or reused databases)
+            </label>
 
             <label class="assist-checkbox-row">
                 <input type="checkbox" name="seed_test_user" value="1" @checked(old('seed_test_user'))>

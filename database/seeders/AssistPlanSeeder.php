@@ -18,7 +18,7 @@ class AssistPlanSeeder extends Seeder
                 'price_ngn' => 0,
                 'price_usd' => 0,
                 'sort_order' => 1,
-                'description' => 'Try Assist with weekly limits on post-production tools.',
+                'description' => 'Try every workflow — including Music Video Cuts — with friendly weekly limits.',
                 'limits' => [
                     'preproduction' => null,
                     'reel_clones' => 1,
@@ -40,7 +40,7 @@ class AssistPlanSeeder extends Seeder
                 'price_ngn' => 5000,
                 'price_usd' => 5.00,
                 'sort_order' => 2,
-                'description' => 'Unlimited preproduction plus generous monthly post-production quotas.',
+                'description' => 'More Music Video Cuts, Reels, Beat Edit, and AI Editor runs each month.',
                 'limits' => [
                     'preproduction' => null,
                     'reel_clones' => 10,

@@ -1,14 +1,14 @@
 @extends('layouts.assist')
-@section('title', 'Log in')
 @section('content')
+@php $i = $intro ?? []; @endphp
 <div class="assist-auth-wrap">
     <div class="glass-panel assist-auth-card">
         <img src="{{ asset('assist/assist-logo.png') }}" alt="Assist" class="assist-auth-logo">
 
-        <h1>Welcome back</h1>
-        <p class="assist-auth-sub">Sign in to your Assist account</p>
+        <h1>{{ $i['heading'] ?? 'Welcome back' }}</h1>
+        <p class="assist-auth-sub">{{ $i['subheading'] ?? 'Sign in to your Assist account' }}</p>
         <x-assist.alert />
-        <form method="POST" action="{{ route('assist.login') }}">
+        <form method="POST" action="{{ route('login') }}">
             @csrf
             <x-assist.input label="Email" name="email" type="email" required />
             <x-assist.input label="Password" name="password" type="password" required />

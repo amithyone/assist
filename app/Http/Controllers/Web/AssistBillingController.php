@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
-use App\Services\CheckoutPayService;
+use App\Services\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,7 +12,7 @@ use RuntimeException;
 
 class AssistBillingController extends Controller
 {
-    public function upgrade(Request $request, string $plan, CheckoutPayService $checkout): RedirectResponse|View
+    public function upgrade(Request $request, string $plan, PaymentGatewayManager $gateways): RedirectResponse|View
     {
         $plan = Plan::where('slug', $plan)->where('is_active', true)->firstOrFail();
         $user = $request->user();
@@ -22,10 +22,17 @@ class AssistBillingController extends Controller
             return redirect()->route('assist.dashboard')->with('status', 'You are on the free plan.');
         }
 
+        $gateway = $gateways->gatewayForCurrency($currency);
+
         try {
-            $payment = $checkout->createPaymentRequest($user, $plan, $currency);
+            $gateways->assertConfigured($gateway);
+            $payment = $gateways->createPayment($user, $plan, $currency);
         } catch (RuntimeException $e) {
             return redirect()->route('assist.pricing')->withErrors(['billing' => $e->getMessage()]);
+        }
+
+        if ($payment->gateway === 'paystack' && ! empty($payment->checkout_payload['authorization_url'])) {
+            return redirect()->away($payment->checkout_payload['authorization_url']);
         }
 
         return redirect()->route('assist.billing.payment', [
@@ -33,28 +40,18 @@ class AssistBillingController extends Controller
         ]);
     }
 
-    public function payment(Request $request, string $transaction, CheckoutPayService $checkout): View
+    public function payment(Request $request, string $transaction, PaymentGatewayManager $gateways): View|RedirectResponse
     {
         $payment = $request->user()->payments()->where('transaction_id', $transaction)->firstOrFail();
-        $data = $payment->checkout_payload ?? [];
+        $payment = $gateways->syncPaymentStatus($payment);
 
-        try {
-            $status = $checkout->getPaymentStatus($transaction);
-            if (($status['data']['status'] ?? '') === 'approved') {
-                $checkout->activatePlanFromWebhook([
-                    'event' => 'payment.approved',
-                    'transaction_id' => $transaction,
-                    'service' => 'assist-plan:'.$payment->plan_slug,
-                ]);
-                $payment->refresh();
-            }
-        } catch (\Throwable) {
-            // polling optional
+        if ($payment->gateway === 'paystack' && $payment->status === 'pending' && ! empty($payment->checkout_payload['authorization_url'])) {
+            return redirect()->away($payment->checkout_payload['authorization_url']);
         }
 
         return view('assist.billing.payment', [
             'payment' => $payment,
-            'bank' => $data,
+            'bank' => $payment->checkout_payload ?? [],
             'plan' => Plan::where('slug', $payment->plan_slug)->first(),
         ]);
     }

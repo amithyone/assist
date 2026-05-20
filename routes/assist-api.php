@@ -14,6 +14,14 @@ use Illuminate\Support\Facades\Route;
 | Or copy the Route::prefix block below.
 */
 
+Route::get('assist/ping', function () {
+    return response()->json([
+        'ok' => true,
+        'site_url' => config('app.url'),
+        'app_version' => config('assist.app_version'),
+    ]);
+});
+
 Route::prefix('assist')
     ->middleware([AssistApiKey::class, 'throttle:60,1'])
     ->group(function () {

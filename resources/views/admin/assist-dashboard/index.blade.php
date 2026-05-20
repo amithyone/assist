@@ -1,44 +1,92 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Assist Admin</title>
-    <link rel="stylesheet" href="{{ asset('assist/assist-site.css') }}">
-</head>
-<body style="background: #0f172a; color: #e2e8f0; padding: 40px;">
-@include('admin.partials.nav')
-<div class="admin-wrap" style="max-width: 960px; margin: 0 auto;">
-    <h1 style="font-size: 28px; margin-bottom: 24px;">Admin overview</h1>
-    <p style="margin-bottom: 24px;"><a href="{{ route('admin.assist.downloads') }}" style="color: #818cf8;">Upload macOS app for public download →</a></p>
-    @if (session('status'))
-        <p style="color: #34d399; margin-bottom: 16px;">{{ session('status') }}</p>
-    @endif
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
-        <div class="glass-panel" style="padding: 20px;"><p style="font-size: 12px; opacity: .7;">Users</p><p style="font-size: 32px; font-weight: 700;">{{ $userCount }}</p></div>
-        <div class="glass-panel" style="padding: 20px;"><p style="font-size: 12px; opacity: .7;">Approved payments</p><p style="font-size: 32px; font-weight: 700;">{{ $paymentCount }}</p></div>
+@extends('layouts.admin')
+
+@section('title', 'Overview')
+@section('page_title', 'Overview')
+
+@section('content')
+<div class="assist-admin-stats">
+    <div class="assist-admin-stat glass-panel">
+        <p class="assist-admin-stat-label">Total users</p>
+        <p class="assist-admin-stat-value">{{ number_format($userCount) }}</p>
     </div>
-    <h2 style="font-size: 18px; margin-bottom: 12px;">Plans</h2>
-    <ul style="margin-bottom: 32px;">
-        @foreach ($plans as $plan)
-            <li>{{ $plan->name }} — ₦{{ number_format($plan->price_ngn ?? 0) }} / ${{ number_format($plan->price_usd ?? 0, 2) }} ({{ $plan->usage_period }})</li>
-        @endforeach
-    </ul>
-    <h2 style="font-size: 18px; margin-bottom: 12px;">Recent payments</h2>
-    <table style="width: 100%; font-size: 14px;">
-        <thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead>
-        <tbody>
-            @forelse ($recentPayments as $p)
-                <tr>
-                    <td>{{ $p->user?->email }}</td>
-                    <td>{{ $p->plan_slug }}</td>
-                    <td>{{ $p->currency }} {{ $p->amount }}</td>
-                    <td>{{ $p->status }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="4">No payments yet.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div class="assist-admin-stat glass-panel">
+        <p class="assist-admin-stat-label">Approved payments</p>
+        <p class="assist-admin-stat-value">{{ number_format($paymentCount) }}</p>
+    </div>
+    <div class="assist-admin-stat glass-panel">
+        <p class="assist-admin-stat-label">Active plans</p>
+        <p class="assist-admin-stat-value">{{ $plans->count() }}</p>
+    </div>
 </div>
-</body>
-</html>
+
+<div class="assist-admin-card glass-panel">
+    <h2>Quick links</h2>
+    <div class="flex gap-4" style="flex-wrap: wrap;">
+        <a href="{{ route('admin.assist.users') }}" class="assist-btn assist-btn-outline">Manage users</a>
+        <a href="{{ route('admin.assist.settings') }}" class="assist-btn assist-btn-primary">Payment setup</a>
+        <a href="{{ route('admin.assist.downloads') }}" class="assist-btn assist-btn-outline">App release</a>
+    </div>
+</div>
+
+<div class="assist-admin-card glass-panel">
+    <h2>Plans</h2>
+    <div class="assist-admin-table-wrap">
+        <table class="assist-admin-table">
+            <thead>
+                <tr>
+                    <th>Plan</th>
+                    <th>NGN</th>
+                    <th>USD</th>
+                    <th>Period</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($plans as $plan)
+                    <tr>
+                        <td><strong>{{ $plan->name }}</strong> <span class="assist-text-muted">({{ $plan->slug }})</span></td>
+                        <td>₦{{ number_format($plan->price_ngn ?? 0) }}</td>
+                        <td>${{ number_format($plan->price_usd ?? 0, 2) }}</td>
+                        <td>{{ $plan->usage_period }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="assist-admin-card glass-panel">
+    <h2>Recent payments</h2>
+    <div class="assist-admin-table-wrap">
+        <table class="assist-admin-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Gateway</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($recentPayments as $p)
+                    <tr>
+                        <td>{{ $p->user?->email ?? '—' }}</td>
+                        <td>{{ $p->plan_slug }}</td>
+                        <td>{{ strtoupper($p->currency) }} {{ number_format($p->amount, 2) }}</td>
+                        <td><span class="assist-admin-badge assist-admin-badge-muted">{{ $p->gateway ?? 'checkoutpay' }}</span></td>
+                        <td>
+                            <span class="assist-admin-badge {{ $p->status === 'approved' ? 'assist-admin-badge-success' : 'assist-admin-badge-muted' }}">
+                                {{ $p->status }}
+                            </span>
+                        </td>
+                        <td class="assist-text-muted">{{ $p->created_at?->format('M j, Y H:i') }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="assist-text-muted">No payments yet.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endsection

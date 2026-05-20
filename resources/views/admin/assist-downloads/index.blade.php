@@ -1,79 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>App Download — Assist Admin</title>
-    <link rel="stylesheet" href="{{ asset('assist/assist-site.css') }}">
-</head>
-<body style="background: #0f172a; color: #e2e8f0; padding: 40px;">
-@include('admin.partials.nav')
-<div style="max-width: 720px; margin: 0 auto;">
-    <h1 style="font-size: 28px; margin-bottom: 8px;">App download</h1>
-    <p style="opacity: .7; margin-bottom: 24px;">Upload the macOS installer (.dmg or .zip). Users download it from your site via the public link below.</p>
+@extends('layouts.admin')
 
-    @if (session('status'))
-        <p style="color: #34d399; margin-bottom: 16px;">{{ session('status') }}</p>
-    @endif
-    @if ($errors->any())
-        <div style="color: #f87171; margin-bottom: 16px;">
-            @foreach ($errors->all() as $err)
-                <p>{{ $err }}</p>
-            @endforeach
-        </div>
-    @endif
+@section('title', 'App release')
+@section('page_title', 'App release')
 
-    <div class="glass-panel" style="padding: 24px; border-radius: 16px; margin-bottom: 24px;">
-        <h2 style="font-size: 16px; margin-bottom: 12px;">Current release</h2>
-        @if ($fileExists && $release)
-            <p><strong>Version:</strong> {{ $release['version'] ?? '—' }}</p>
-            <p><strong>File:</strong> {{ $release['stored_filename'] }} ({{ $fileSizeMb }} MB)</p>
-            <p><strong>Uploaded:</strong> {{ $release['uploaded_at'] ?? '—' }}</p>
-            @if (!empty($release['release_notes']))
-                <p><strong>Notes:</strong> {{ $release['release_notes'] }}</p>
-            @endif
-            <p style="margin-top: 16px;"><strong>Public download URL:</strong></p>
-            <p><a href="{{ $downloadUrl }}" style="color: #818cf8; word-break: break-all;">{{ $downloadUrl }}</a></p>
-            <p style="font-size: 12px; opacity: .6; margin-top: 8px;">Homepage, dashboard, and nav “Download” buttons use this link automatically after upload.</p>
-        @else
-            <p style="opacity: .7;">No installer uploaded yet. Links fall back to <code>ASSIST_DOWNLOAD_URL</code> in .env.</p>
-        @endif
-    </div>
-
-    <div class="glass-panel" style="padding: 24px; border-radius: 16px; margin-bottom: 24px;">
-        <h2 style="font-size: 16px; margin-bottom: 16px;">Upload new installer</h2>
-        <form method="POST" action="{{ route('admin.assist.downloads.store') }}" enctype="multipart/form-data">
-            @csrf
-            <p style="margin-bottom: 8px; font-size: 14px;">Installer file (.dmg or .zip, max {{ $maxUploadMb }} MB)</p>
-            <input type="file" name="installer" accept=".dmg,.zip,application/zip,application/x-apple-diskimage" required
-                   style="margin-bottom: 16px; width: 100%; color: #e2e8f0;">
-            <p style="margin-bottom: 8px; font-size: 14px;">Version label (optional)</p>
-            <input type="text" name="version" value="{{ old('version', $release['version'] ?? config('assist.app_version')) }}"
-                   placeholder="e.g. 1.2.0" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #fff;">
-            <p style="margin-bottom: 8px; font-size: 14px;">Release notes (optional)</p>
-            <textarea name="release_notes" rows="3" placeholder="What's new in this build..."
-                      style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #fff;">{{ old('release_notes', $release['release_notes'] ?? '') }}</textarea>
-            <button type="submit" style="padding: 12px 24px; border-radius: 8px; background: #6366f1; color: #fff; border: none; cursor: pointer; font-weight: 600;">
-                Upload &amp; publish download link
-            </button>
-        </form>
-        <p style="font-size: 12px; opacity: .6; margin-top: 12px;">
-            On shared hosting, raise PHP <code>upload_max_filesize</code> and <code>post_max_size</code> in hPanel if large DMGs fail.
-        </p>
-    </div>
-
-    @if ($fileExists)
-        <form method="POST" action="{{ route('admin.assist.downloads.destroy') }}" onsubmit="return confirm('Remove the uploaded installer?');">
-            @csrf
-            @method('DELETE')
-            <label style="font-size: 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <input type="checkbox" name="confirm" value="1" required>
-                I want to remove the current installer
-            </label>
-            <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #475569; color: #fff; border: none; cursor: pointer;">
-                Remove release
-            </button>
-        </form>
+@section('content')
+<div class="assist-admin-card glass-panel">
+    <h2>Published on site</h2>
+    <p class="assist-text-muted mb-4">
+        Upload one installer per platform. Empty platforms are hidden from the public site.
+        Right now Assist is built for <strong>Apple Silicon Mac (arm64)</strong>; add Intel Mac, Windows, or Linux when those builds are ready.
+    </p>
+    @if ($availableCount > 0)
+        <p class="assist-text-muted mb-4">Primary download URL: <a href="{{ $primaryDownloadUrl }}" style="color: var(--primary-hover); word-break: break-all;">{{ $primaryDownloadUrl }}</a></p>
+    @else
+        <p class="assist-text-muted">Nothing published yet. Upload at least <strong>Mac (Apple Silicon)</strong> to enable downloads on the site.</p>
     @endif
 </div>
-</body>
-</html>
+
+@foreach ($platforms as $platform)
+<div class="assist-admin-card glass-panel">
+    <h2>{{ $platform['label'] }}</h2>
+    <p class="assist-text-muted mb-4">{{ $platform['description'] }}</p>
+    <p class="assist-text-muted mb-4">Allowed: .{{ implode(', .', $platform['extensions']) }} (max {{ $maxUploadMb }} MB)</p>
+
+    @if ($platform['fileExists'] && $platform['release'])
+        <div class="assist-admin-form-grid assist-admin-form-grid-2 mb-4">
+            <p><span class="assist-text-muted">Version</span><br><strong>{{ $platform['release']['version'] ?? '—' }}</strong></p>
+            <p><span class="assist-text-muted">Size</span><br><strong>{{ $platform['fileSizeMb'] }} MB</strong></p>
+            <p><span class="assist-text-muted">File</span><br>{{ $platform['release']['stored_filename'] }}</p>
+            <p><span class="assist-text-muted">Uploaded</span><br>{{ $platform['release']['uploaded_at'] ?? '—' }}</p>
+        </div>
+        @if (!empty($platform['release']['release_notes']))
+            <p class="mb-4"><span class="assist-text-muted">Notes</span><br>{{ $platform['release']['release_notes'] }}</p>
+        @endif
+        <p class="assist-admin-section-title">Public URL</p>
+        <a href="{{ $platform['downloadUrl'] }}" class="assist-text-muted" style="color: var(--primary-hover); word-break: break-all;">{{ $platform['downloadUrl'] }}</a>
+        <p class="assist-text-muted mt-4" style="font-size: 0.875rem;">Visible on homepage, dashboard, and nav when uploaded.</p>
+
+        <form method="POST" action="{{ route('admin.assist.downloads.destroy') }}" class="mt-6" onsubmit="return confirm('Remove {{ $platform['label'] }} from the site?');">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="platform" value="{{ $platform['key'] }}">
+            <label class="assist-checkbox-row">
+                <input type="checkbox" name="confirm" value="1" required>
+                Remove {{ $platform['label'] }} release
+            </label>
+            <button type="submit" class="assist-btn assist-btn-outline mt-4">Remove from site</button>
+        </form>
+    @else
+        <p class="assist-text-muted mb-4">Not published — visitors will not see a download button for this platform.</p>
+    @endif
+
+    <h3 class="mt-6" style="font-size: 1rem;">{{ $platform['fileExists'] ? 'Replace' : 'Upload' }} installer</h3>
+    <form method="POST" action="{{ route('admin.assist.downloads.store') }}" enctype="multipart/form-data" class="assist-admin-form-grid mt-4" style="max-width: 560px;">
+        @csrf
+        <input type="hidden" name="platform" value="{{ $platform['key'] }}">
+        <div class="assist-field">
+            <label for="installer_{{ $platform['key'] }}">Installer file</label>
+            <input type="file" id="installer_{{ $platform['key'] }}" name="installer" class="assist-input" accept="{{ collect($platform['extensions'])->map(fn ($e) => '.'.$e)->implode(',') }}" required>
+        </div>
+        <x-assist.input label="Version label" name="version" :value="old('version', $platform['release']['version'] ?? config('assist.app_version'))" />
+        <div class="assist-field">
+            <label for="release_notes_{{ $platform['key'] }}">Release notes</label>
+            <textarea id="release_notes_{{ $platform['key'] }}" name="release_notes" class="assist-textarea" rows="2">{{ old('release_notes', $platform['release']['release_notes'] ?? '') }}</textarea>
+        </div>
+        <div>
+            <button type="submit" class="assist-btn assist-btn-primary">Upload & publish</button>
+        </div>
+    </form>
+</div>
+@endforeach
+@endsection

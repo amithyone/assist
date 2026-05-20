@@ -137,10 +137,14 @@ ASSIST_DEFAULT_PLAN=free
 ASSIST_DOWNLOAD_URL=#download
 ASSIST_SUPPORT_EMAIL=support@assist.app
 ASSIST_SETUP_ENABLED=true
+PAYMENT_GATEWAY=checkoutpay
 CHECKOUT_BASE_URL=https://check-outpay.com/api/v1
 CHECKOUT_API_KEY=
 CHECKOUT_WEBHOOK_URL=
 CHECKOUT_DEV_PROGRAM_PARTNER_ID=
+PAYSTACK_PUBLIC_KEY=
+PAYSTACK_SECRET_KEY=
+PAYSTACK_WEBHOOK_URL=
 EOF
 
 if ! grep -q 'assist-setup.php' routes/web.php 2>/dev/null; then
@@ -156,7 +160,7 @@ Route::middleware(['auth', 'assist.admin'])->prefix('admin/assist')->group(funct
 EOF
 fi
 if ! grep -q 'assist-api.php' routes/api.php 2>/dev/null; then
-  printf '\nrequire base_path(\'routes/assist-api.php\');\n' >> routes/api.php
+  echo "require base_path('routes/assist-api.php');" >> routes/api.php
 fi
 
 if [ -f bootstrap/app.php ] && ! grep -q 'AssistSetupGate' bootstrap/app.php 2>/dev/null; then
@@ -176,6 +180,18 @@ if (preg_match("/->withMiddleware\\(\\s*function\\s*\\(\\s*\\\\?Illuminate\\\\Fo
   file_put_contents($f, $c);
 }
 ' 2>/dev/null || echo "    Add middleware aliases manually in bootstrap/app.php"
+fi
+
+if [ -f bootstrap/providers.php ] && ! grep -q 'AssistServiceProvider' bootstrap/providers.php; then
+  echo "==> Registering AssistServiceProvider..."
+  run_php -r '
+$f = "bootstrap/providers.php";
+$c = file_get_contents($f);
+if (strpos($c, "AssistServiceProvider") !== false) exit(0);
+$c = str_replace("use App\\Providers\\AppServiceProvider;", "use App\\Providers\\AppServiceProvider;\nuse App\\Providers\\AssistServiceProvider;", $c);
+$c = str_replace("AppServiceProvider::class,", "AppServiceProvider::class,\n    AssistServiceProvider::class,", $c);
+file_put_contents($f, $c);
+' 2>/dev/null || echo "    Add App\\Providers\\AssistServiceProvider to bootstrap/providers.php"
 fi
 
 if [ -f app/Models/User.php ] && ! grep -q 'HasAssistPlan' app/Models/User.php; then

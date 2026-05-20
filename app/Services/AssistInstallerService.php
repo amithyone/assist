@@ -22,14 +22,53 @@ class AssistInstallerService
 
     public function isInstalled(): bool
     {
-        if (is_file($this->lockFilePath())) {
-            return true;
-        }
+        return is_file($this->lockFilePath());
+    }
 
+    /**
+     * Whether core Assist tables exist (used for admin diagnostics).
+     */
+    public function hasAssistSchema(): bool
+    {
         try {
             return DB::connection()->getSchemaBuilder()->hasTable('plans');
         } catch (Throwable) {
             return false;
+        }
+    }
+
+    /**
+     * Count tables in the configured database (0 = empty).
+     */
+    public function databaseTableCount(?array $db = null): ?int
+    {
+        try {
+            if ($db !== null) {
+                config([
+                    'database.connections.setup_probe' => [
+                        'driver' => 'mysql',
+                        'host' => $db['host'] ?? '127.0.0.1',
+                        'port' => $db['port'] ?? '3306',
+                        'database' => $db['database'] ?? '',
+                        'username' => $db['username'] ?? '',
+                        'password' => $db['password'] ?? '',
+                        'charset' => 'utf8mb4',
+                        'collation' => 'utf8mb4_unicode_ci',
+                    ],
+                ]);
+                $connection = DB::connection('setup_probe');
+            } else {
+                $connection = DB::connection();
+            }
+
+            $rows = $connection->select(
+                'SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = ?',
+                [$db['database'] ?? $connection->getDatabaseName()]
+            );
+
+            return (int) ($rows[0]->c ?? 0);
+        } catch (Throwable) {
+            return null;
         }
     }
 
@@ -59,8 +98,21 @@ class AssistInstallerService
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ]);
             $pdo->query('SELECT 1');
+            $count = $this->databaseTableCount([
+                'host' => $host,
+                'port' => $port,
+                'database' => $database,
+                'username' => $username,
+                'password' => $password,
+            ]);
+            $message = 'Database connection successful.';
+            if ($count === 0) {
+                $message .= ' Database is empty (ready for fresh install).';
+            } elseif ($count !== null) {
+                $message .= " Found {$count} existing table(s). Enable “Fresh install” on Install to drop them first.";
+            }
 
-            return ['ok' => true, 'message' => 'Database connection successful.'];
+            return ['ok' => true, 'message' => $message, 'table_count' => $count];
         } catch (Throwable $e) {
             return ['ok' => false, 'message' => $e->getMessage()];
         }
@@ -79,6 +131,7 @@ class AssistInstallerService
             'DB_DATABASE' => $db['database'] ?? '',
             'DB_USERNAME' => $db['username'] ?? '',
             'DB_PASSWORD' => $db['password'] ?? '',
+            'SESSION_DRIVER' => 'file',
             'APP_URL' => $app['url'] ?? config('app.url'),
             'ASSIST_APP_KEY' => $app['assist_app_key'] ?? config('assist.app_key'),
             'ASSIST_DOWNLOAD_URL' => $app['download_url'] ?? config('assist.download_url'),
@@ -115,6 +168,51 @@ class AssistInstallerService
             'CHECKOUT_WEBHOOK_URL' => $checkout['webhook_url'] ?? '',
             'CHECKOUT_DEV_PROGRAM_PARTNER_ID' => $checkout['dev_program_partner_id'] ?? '',
         ]);
+    }
+
+    /**
+     * @param  array<string, string|null>  $paystack
+     */
+    public function savePaystackEnvironment(array $paystack): void
+    {
+        $values = [
+            'PAYSTACK_PUBLIC_KEY' => $paystack['public_key'] ?? '',
+            'PAYSTACK_WEBHOOK_URL' => $paystack['webhook_url'] ?? '',
+        ];
+        if (! empty($paystack['secret_key']) && ! str_contains((string) $paystack['secret_key'], '••')) {
+            $values['PAYSTACK_SECRET_KEY'] = $paystack['secret_key'];
+        }
+        $this->envWriter->setMany($values);
+    }
+
+    public function savePaymentGateway(string $gateway): void
+    {
+        $gateway = in_array($gateway, ['checkoutpay', 'paystack'], true) ? $gateway : 'checkoutpay';
+        $this->envWriter->setMany(['PAYMENT_GATEWAY' => $gateway]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function paymentSettingsForAdmin(): array
+    {
+        $appUrl = rtrim(config('app.url'), '/');
+
+        return [
+            'default_gateway' => config('assist.payment.default_gateway', 'checkoutpay'),
+            'checkout' => [
+                'base_url' => config('assist.checkout.base_url'),
+                'api_key_set' => (bool) config('assist.checkout.api_key'),
+                'webhook_url' => config('assist.checkout.webhook_url') ?: ($appUrl.'/webhooks/checkoutpay'),
+                'dev_program_partner_id' => config('assist.checkout.dev_program_partner_id'),
+            ],
+            'paystack' => [
+                'public_key' => config('assist.paystack.public_key'),
+                'secret_key_set' => (bool) config('assist.paystack.secret_key'),
+                'public_key_display' => config('assist.paystack.public_key') ? '••••••••' : '',
+                'webhook_url' => config('assist.paystack.webhook_url') ?: ($appUrl.'/webhooks/paystack'),
+            ],
+        ];
     }
 
     public function refreshConfig(): void
@@ -181,14 +279,20 @@ class AssistInstallerService
         return is_file('/usr/local/bin/composer') ? '/usr/local/bin/composer' : null;
     }
 
-    public function runMigrations(): array
+    public function runMigrations(bool $fresh = false): array
     {
         $this->refreshConfig();
-        Artisan::call('migrate', ['--force' => true]);
+
+        if ($fresh) {
+            Artisan::call('migrate:fresh', ['--force' => true]);
+        } else {
+            Artisan::call('migrate', ['--force' => true]);
+        }
 
         return [
             'ok' => true,
             'output' => trim(Artisan::output()),
+            'fresh' => $fresh,
         ];
     }
 
@@ -199,6 +303,12 @@ class AssistInstallerService
             '--force' => true,
         ]);
         $output = trim(Artisan::output());
+
+        Artisan::call('db:seed', [
+            '--class' => 'SitePageSeeder',
+            '--force' => true,
+        ]);
+        $output .= "\n".trim(Artisan::output());
 
         if ($includeTestUser) {
             Artisan::call('db:seed', [
@@ -309,6 +419,7 @@ class AssistInstallerService
         array $checkout = [],
         array $admin = [],
         bool $seedTestUser = false,
+        bool $freshInstall = true,
     ): array {
         if (! $this->requirementsMet()) {
             throw new RuntimeException('Server requirements are not met.');
@@ -333,12 +444,15 @@ class AssistInstallerService
         $this->refreshConfig();
         $this->ensureAppKey();
 
-        $migrate = $this->runMigrations();
+        $migrate = $this->runMigrations($freshInstall);
         $seed = $this->runSeeders($seedTestUser);
 
         if (! empty($admin['email']) && ! empty($admin['password'])) {
             $this->createAdminUser($admin);
         }
+
+        $this->envWriter->setMany(['SESSION_DRIVER' => 'database']);
+        $this->refreshConfig();
 
         $this->markInstalled();
 

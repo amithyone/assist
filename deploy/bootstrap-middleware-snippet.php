@@ -10,6 +10,12 @@
 // ]);
 
 /**
+ * bootstrap/providers.php — add:
+ *
+ * App\Providers\AssistServiceProvider::class,
+ */
+
+/**
  * routes/web.php (after setup routes):
  *
  * require base_path('routes/assist-setup.php');

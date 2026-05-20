@@ -4,7 +4,10 @@ use App\Http\Controllers\Web\AssistAuthController;
 use App\Http\Controllers\Web\AssistBillingController;
 use App\Http\Controllers\Web\AssistDownloadController;
 use App\Http\Controllers\Web\AssistPageController;
+use App\Http\Controllers\Web\RobotsController;
+use App\Http\Controllers\Web\SitemapController;
 use App\Http\Controllers\Webhooks\CheckoutPayWebhookController;
+use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,14 +18,25 @@ use Illuminate\Support\Facades\Route;
 Route::post('/webhooks/checkoutpay', [CheckoutPayWebhookController::class, 'handle'])
     ->name('assist.webhooks.checkoutpay');
 
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
+    ->name('assist.webhooks.paystack');
+
+Route::get('/download/assist/{platform}', [AssistDownloadController::class, 'downloadPlatform'])
+    ->where('platform', 'mac_arm64|mac_x86_64|windows|linux')
+    ->name('assist.download.platform');
 Route::get('/download/assist', [AssistDownloadController::class, 'download'])->name('assist.download.app');
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('assist.sitemap');
+Route::get('/robots.txt', [RobotsController::class, 'index'])->name('assist.robots');
 
 Route::get('/', [AssistPageController::class, 'home'])->name('assist.home');
 Route::get('/pricing', [AssistPageController::class, 'pricing'])->name('assist.pricing');
 Route::get('/docs', [AssistPageController::class, 'docs'])->name('assist.docs');
+Route::get('/privacy', [AssistPageController::class, 'privacy'])->name('assist.privacy');
+Route::get('/terms', [AssistPageController::class, 'terms'])->name('assist.terms');
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AssistAuthController::class, 'showLogin'])->name('assist.login');
+    Route::get('/login', [AssistAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AssistAuthController::class, 'login']);
     Route::get('/register', [AssistAuthController::class, 'showRegister'])->name('assist.register');
     Route::post('/register', [AssistAuthController::class, 'register']);

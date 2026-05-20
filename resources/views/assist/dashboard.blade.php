@@ -42,12 +42,18 @@
                 @endforeach
             </div>
         @endif
-        <div style="margin-top: 48px; display: flex; flex-wrap: gap: 16px;">
-            <a href="{{ app(\App\Services\AssistAppReleaseService::class)->downloadUrl() }}" class="assist-btn assist-btn-primary">Download Assist for Mac</a>
-            @if (($limits['plan']['slug'] ?? 'free') !== 'unlimited')
+        @php $assistDownloads = app(\App\Services\AssistAppReleaseService::class)->availableDownloads(); @endphp
+        @if (count($assistDownloads) > 0)
+            <div style="margin-top: 48px;">
+                <h2 style="font-size: 1.25rem; margin-bottom: 16px;">Download Assist</h2>
+                <x-assist.downloads layout="list" />
+            </div>
+        @endif
+        @if (($limits['plan']['slug'] ?? 'free') !== 'unlimited')
+            <div style="margin-top: 24px;">
                 <a href="{{ route('assist.pricing') }}" class="assist-btn assist-btn-outline">Upgrade plan</a>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
 </section>
 @endsection

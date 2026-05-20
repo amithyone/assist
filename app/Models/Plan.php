@@ -17,6 +17,17 @@ class Plan extends Model
         'transcribe_clips',
     ];
 
+    /** @var array<string, string> */
+    public const FEATURE_LABELS = [
+        'preproduction' => 'Preproduction workspace',
+        'reel_clones' => 'Reels Cloner',
+        'beat_edits' => 'Beat Edit',
+        'music_video_cuts' => 'Music Video Cuts',
+        'ai_edits' => 'AI Editor',
+        'timelines' => 'Timeline assemblies',
+        'transcribe_clips' => 'Transcription',
+    ];
+
     protected $fillable = [
         'slug',
         'name',
@@ -75,7 +86,7 @@ class Plan extends Model
                 continue;
             }
             $limit = $limits[$feature];
-            $label = str_replace('_', ' ', ucwords($feature, '_'));
+            $label = self::FEATURE_LABELS[$feature] ?? str_replace('_', ' ', ucwords($feature, '_'));
             if ($limit === null) {
                 $lines[] = "Unlimited {$label}";
             } else {

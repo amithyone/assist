@@ -1,13 +1,16 @@
 @extends('layouts.assist')
 
-@section('title', 'Pricing')
-
 @section('content')
+@php
+    $i = $intro ?? [];
+@endphp
 <section class="assist-section" style="padding-top: 120px;">
     <div class="assist-container text-center mb-8">
-        <span class="assist-eyebrow">Pricing</span>
-        <h1 class="assist-h2">Simple, transparent plans.</h1>
-        <p class="assist-text-muted">Pay in Naira (Nigeria) or USD (international).</p>
+        <span class="assist-eyebrow">{{ $i['eyebrow'] ?? 'Pricing' }}</span>
+        <h1 class="assist-h2">{{ $i['heading'] ?? 'Simple, transparent plans.' }}</h1>
+        <p class="assist-text-muted" style="max-width: 36rem; margin: 0 auto;">
+            {{ $i['subheading'] ?? 'Pay in Naira (Nigeria) or USD (international). Plans cap automated runs — not your creativity in Resolve.' }}
+        </p>
     </div>
     <div class="assist-container assist-grid-3">
         @foreach ($plans as $plan)

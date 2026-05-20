@@ -24,7 +24,7 @@ class AssistSetupController extends Controller
             'requirements' => $this->installer->requirements(),
             'requirementsMet' => $this->installer->requirementsMet(),
             'vendorPresent' => $this->installer->vendorPresent(),
-            'defaultWebhookUrl' => $appUrl.'/webhooks/checkoutpay',
+            'payment' => $this->installer->paymentSettingsForAdmin(),
         ]);
     }
 
@@ -80,10 +80,15 @@ class AssistSetupController extends Controller
             'checkout_api_key' => 'nullable|string|max:255',
             'checkout_webhook_url' => 'nullable|url|max:500',
             'checkout_dev_program_partner_id' => 'nullable|integer',
+            'payment_gateway' => 'nullable|in:checkoutpay,paystack',
+            'paystack_public_key' => 'nullable|string|max:255',
+            'paystack_secret_key' => 'nullable|string|max:255',
+            'paystack_webhook_url' => 'nullable|url|max:500',
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|max:255',
             'admin_password' => 'required|string|min:8|confirmed',
             'seed_test_user' => 'boolean',
+            'fresh_install' => 'boolean',
         ]);
 
         $appUrl = rtrim($data['app_url'], '/');
@@ -125,8 +130,17 @@ class AssistSetupController extends Controller
                     'email' => $data['admin_email'],
                     'password' => $data['admin_password'],
                 ],
-                (bool) ($data['seed_test_user'] ?? false)
+                (bool) ($data['seed_test_user'] ?? false),
+                (bool) ($data['fresh_install'] ?? true)
             );
+
+            $this->installer->savePaymentGateway($data['payment_gateway'] ?? 'checkoutpay');
+            $this->installer->savePaystackEnvironment([
+                'public_key' => $data['paystack_public_key'] ?? '',
+                'secret_key' => $data['paystack_secret_key'] ?? '',
+                'webhook_url' => $data['paystack_webhook_url'] ?? ($appUrl.'/webhooks/paystack'),
+            ]);
+            $this->installer->refreshConfig();
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
@@ -134,7 +148,7 @@ class AssistSetupController extends Controller
         }
 
         return redirect()
-            ->route('assist.login')
+            ->route('login')
             ->with('status', 'Assist installed successfully. Log in with your admin account.');
     }
 }

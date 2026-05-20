@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="@yield('meta_description', 'Assist — AI-assisted video post-production for DaVinci Resolve. Love shooting. Make the first edit feel light again.')">
-    <title>@yield('title', 'Assist') — AI Editor for DaVinci Resolve</title>
+    <x-assist.seo :seo="$seo ?? []" />
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/assist.css', 'resources/js/assist.js'])
     @else
@@ -33,8 +32,14 @@ document.querySelectorAll('[data-assist-tabs]').forEach((root) => {
   buttons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-assist-tab');
-      buttons.forEach((b) => b.classList.toggle('active', b === btn));
-      panels.forEach((p) => { p.hidden = p.getAttribute('data-assist-panel') !== id; });
+      buttons.forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach((p) => {
+        p.hidden = p.getAttribute('data-assist-panel') !== id;
+      });
     });
   });
 });
