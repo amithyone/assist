@@ -42,6 +42,7 @@ Register middleware in `bootstrap/app.php` or `app/Http/Kernel.php`:
 ```php
 'assist.key' => \App\Http\Middleware\AssistApiKey::class,
 'assist.setup' => \App\Http\Middleware\AssistSetupGate::class,
+'assist.admin' => \App\Http\Middleware\EnsureAssistAdmin::class,
 ```
 
 Copy installer services:
@@ -64,10 +65,12 @@ require base_path('routes/assist-setup.php');
 
 Visit **`/assist/setup`** on a fresh server to:
 
-1. Check PHP requirements  
+1. Check PHP requirements (+ optional **Composer install** if `vendor/` missing)  
 2. Enter MySQL credentials (test connection)  
-3. Save `.env`, generate `APP_KEY`, run migrations + `AssistPlanSeeder`  
-4. Lock install (`storage/app/.assist-installed`)
+3. Configure SMTP mail settings  
+4. Configure CheckoutPay (`CHECKOUT_API_KEY`, webhook URL)  
+5. Create the first **admin** account  
+6. Save `.env`, generate `APP_KEY`, run migrations + `AssistPlanSeeder`, lock install
 
 Disable the public wizard after go-live:
 
@@ -90,12 +93,30 @@ Or copy the `Route::prefix('assist')` block from `routes/assist-api.php`.
 In `routes/web.php` (admin):
 
 ```php
-Route::middleware(['auth', 'admin'])->prefix('admin/assist')->group(function () {
+Route::middleware(['auth', 'assist.admin'])->prefix('admin/assist')->group(function () {
     require base_path('routes/assist-admin.php');
 });
 ```
 
-Admin **System** page (`/admin/assist/system`): update DB credentials in `.env`, **Run migrations**, and run seeders — without SSH.
+Admin pages: **Overview** (`/admin/assist`), **Users** (`/admin/assist/users`), **Activity**, **System** (migrations/seed without SSH).
+
+## Plans (seeded)
+
+| Slug | Price | Usage period | Highlights |
+|------|-------|--------------|------------|
+| `free` | ₦0 / $0 | weekly | 1× reel clone, beat edit, music video cut, AI edit per week |
+| `pro` | ₦5,000 / $5 mo | monthly | Unlimited preproduction; 10 clones, 10 beat edits, 2 music video, 5 AI edits |
+| `unlimited` | ₦30,000 / $30 mo | monthly | Unlimited everything |
+
+## CheckoutPay billing
+
+Env vars: `CHECKOUT_BASE_URL`, `CHECKOUT_API_KEY`, `CHECKOUT_WEBHOOK_URL`, optional `CHECKOUT_DEV_PROGRAM_PARTNER_ID`.
+
+- User upgrades from `/pricing` → `GET /billing/upgrade/{plan}?currency=ngn|usd`
+- Webhook: `POST /webhooks/checkoutpay` (exempt from CSRF in host app, e.g. `$middleware->validateCsrfTokens(except: ['webhooks/checkoutpay'])`)
+- Approve your webhook URL domain in the CheckoutPay dashboard before going live
+
+Add to `app/Models/User.php` `$fillable`: `is_admin`, `billing_currency`, `youtube`, `instagram`, `marketing_opt_in`.
 
 ## 5. Migrate and seed
 

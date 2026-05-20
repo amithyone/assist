@@ -137,6 +137,10 @@ ASSIST_DEFAULT_PLAN=free
 ASSIST_DOWNLOAD_URL=#download
 ASSIST_SUPPORT_EMAIL=support@assist.app
 ASSIST_SETUP_ENABLED=true
+CHECKOUT_BASE_URL=https://check-outpay.com/api/v1
+CHECKOUT_API_KEY=
+CHECKOUT_WEBHOOK_URL=
+CHECKOUT_DEV_PROGRAM_PARTNER_ID=
 EOF
 
 if ! grep -q 'assist-setup.php' routes/web.php 2>/dev/null; then
@@ -146,6 +150,9 @@ if ! grep -q 'assist-setup.php' routes/web.php 2>/dev/null; then
 // Assist integration
 require base_path('routes/assist-setup.php');
 require base_path('routes/assist-web.php');
+Route::middleware(['auth', 'assist.admin'])->prefix('admin/assist')->group(function () {
+    require base_path('routes/assist-admin.php');
+});
 EOF
 fi
 if ! grep -q 'assist-api.php' routes/api.php 2>/dev/null; then
@@ -157,7 +164,7 @@ if [ -f bootstrap/app.php ] && ! grep -q 'AssistSetupGate' bootstrap/app.php 2>/
   run_php -r '
 $f = "bootstrap/app.php";
 $c = file_get_contents($f);
-$snippet = "\n    \$middleware->alias([\n        \"assist.key\" => \\App\\Http\\Middleware\\AssistApiKey::class,\n        \"assist.setup\" => \\App\\Http\\Middleware\\AssistSetupGate::class,\n    ]);\n";
+  $snippet = "\n    \$middleware->alias([\n        \"assist.key\" => \\App\\Http\\Middleware\\AssistApiKey::class,\n        \"assist.setup\" => \\App\\Http\\Middleware\\AssistSetupGate::class,\n        \"assist.admin\" => \\App\\Http\\Middleware\\EnsureAssistAdmin::class,\n    ]);\n";
 if (strpos($c, "AssistSetupGate") !== false) exit(0);
 if (preg_match("/->withMiddleware\\(\\s*function\\s*\\(\\s*\\\\?Illuminate\\\\Foundation\\\\Configuration\\\\Middleware\\s*\\\$middleware\\s*\\)\\s*\\{/", $c)) {
   $c = preg_replace(

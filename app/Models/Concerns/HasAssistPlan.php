@@ -24,6 +24,11 @@ trait HasAssistPlan
         return $this->hasMany(\App\Models\UsageEvent::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Payment::class);
+    }
+
     public function currentPlan(): ?Plan
     {
         $userPlan = $this->userPlans()
@@ -37,18 +42,34 @@ trait HasAssistPlan
         return $userPlan?->plan;
     }
 
+    public function currentUserPlan(): ?UserPlan
+    {
+        return $this->userPlans()
+            ->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
+            })
+            ->latest('id')
+            ->first();
+    }
+
+    public function usagePeriodKey(?Plan $plan = null): string
+    {
+        $plan = $plan ?? $this->currentPlan();
+        if ($plan && $plan->usage_period === 'weekly') {
+            return now()->format('o-\WW');
+        }
+
+        return now()->format('Y-m');
+    }
+
     public function usageForPeriod(?string $period = null): UsageCounter
     {
-        $period = $period ?? now()->format('Y-m');
+        $period = $period ?? $this->usagePeriodKey();
 
         return $this->usageCounters()->firstOrCreate(
             ['period' => $period],
-            [
-                'timelines' => 0,
-                'transcribe_clips' => 0,
-                'reel_clones' => 0,
-                'beat_edits' => 0,
-            ]
+            array_fill_keys(UsageCounter::COUNTABLE_FEATURES, 0)
         );
     }
 }

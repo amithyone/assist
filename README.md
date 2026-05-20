@@ -9,7 +9,7 @@ Laravel integration pack for **Assist AI Editor**: API licensing, usage tracking
 ## Quick start (host Laravel app)
 
 1. Copy this folder’s contents into your Laravel project (see [INTEGRATION.md](INTEGRATION.md)).
-2. Register middleware `assist.setup` and `assist.key`.
+2. Register middleware `assist.setup`, `assist.key`, and `assist.admin`.
 3. In `routes/web.php`:
    ```php
    require base_path('routes/assist-setup.php');

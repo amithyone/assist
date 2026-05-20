@@ -1,18 +1,21 @@
 <?php
 
 use App\Http\Controllers\Admin\AssistActivityAdminController;
+use App\Http\Controllers\Admin\AssistDashboardAdminController;
 use App\Http\Controllers\Admin\AssistSystemAdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
 | Paste into routes/web.php inside your admin middleware group:
 |
-| Route::middleware(['auth', 'admin'])->prefix('admin/assist')->group(function () {
+| Route::middleware(['auth', 'assist.admin'])->prefix('admin/assist')->group(function () {
 |     require base_path('routes/assist-admin.php');
 | });
-|
-| Or register routes individually:
 */
+
+Route::get('/', [AssistDashboardAdminController::class, 'index'])->name('admin.assist.dashboard');
+Route::get('users', [AssistDashboardAdminController::class, 'users'])->name('admin.assist.users');
+Route::post('users/plan', [AssistDashboardAdminController::class, 'updateUserPlan'])->name('admin.assist.users.plan');
 
 Route::get('activity', [AssistActivityAdminController::class, 'index'])->name('admin.assist.activity');
 Route::get('activity/export', [AssistActivityAdminController::class, 'exportCsv'])->name('admin.assist.activity.export');

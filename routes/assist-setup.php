@@ -15,5 +15,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['assist.setup:setup'])->prefix('assist/setup')->name('assist.setup.')->group(function () {
     Route::get('/', [AssistSetupController::class, 'index'])->name('index');
     Route::post('/test-database', [AssistSetupController::class, 'testDatabase'])->name('test-database');
+    Route::post('/composer', [AssistSetupController::class, 'runComposer'])->name('composer');
     Route::post('/install', [AssistSetupController::class, 'install'])->name('install');
 });

@@ -34,6 +34,7 @@ Edit `~/domains/amithyone.com/bootstrap/app.php` (parent of `public_html`). Insi
 $middleware->alias([
     'assist.key' => \App\Http\Middleware\AssistApiKey::class,
     'assist.setup' => \App\Http\Middleware\AssistSetupGate::class,
+    'assist.admin' => \App\Http\Middleware\EnsureAssistAdmin::class,
 ]);
 ```
 
@@ -66,7 +67,26 @@ Open:
 
 `https://yourdomain.com/assist/setup`
 
-Enter MySQL credentials → **Install & run migrations**.
+Complete all steps:
+
+1. Requirements (run **Composer install** if `vendor/` is missing)
+2. MySQL credentials
+3. SMTP email settings
+4. CheckoutPay API key + webhook URL (approve webhook domain in CheckoutPay dashboard)
+5. Admin account (name, email, password)
+6. **Install** — runs migrations, seeds Free/Pro/Unlimited plans, creates admin
+
+Log in at `/login`, then open `/admin/assist` for the admin dashboard.
+
+### Pre-built vendor zip (no SSH composer)
+
+On your dev machine:
+
+```bash
+bash assist-integration/deploy/build-release.sh
+```
+
+Upload `deploy/dist/assist-laravel-vendor.zip` to the domain folder, extract, then use `/assist/setup` for DB/mail/admin only.
 
 ### 5. Or via SSH
 
@@ -90,9 +110,9 @@ which composer
 
 In **hPanel → Websites → Manage → Domains → Document root**, set:
 
-`/home/u429468666/assist-laravel/public`
+`/home/u429468666/domains/amithyone.com/public_html`
 
-Then you don’t need symlinks in `public_html`.
+(This is usually already the default on Hostinger.)
 
 ## Troubleshooting
 

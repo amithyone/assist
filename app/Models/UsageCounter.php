@@ -7,9 +7,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UsageCounter extends Model
 {
+    public const COUNTABLE_FEATURES = [
+        'timelines',
+        'transcribe_clips',
+        'reel_clones',
+        'beat_edits',
+        'music_video_cuts',
+        'ai_edits',
+        'preproduction',
+    ];
+
     protected $fillable = [
-        'user_id', 'period',
-        'timelines', 'transcribe_clips', 'reel_clones', 'beat_edits',
+        'user_id',
+        'period',
+        'timelines',
+        'transcribe_clips',
+        'reel_clones',
+        'beat_edits',
+        'music_video_cuts',
+        'ai_edits',
+        'preproduction',
     ];
 
     public function user(): BelongsTo
@@ -24,7 +41,7 @@ class UsageCounter extends Model
 
     public function incrementFeature(string $feature, int $units = 1): void
     {
-        if (! in_array($feature, ['timelines', 'transcribe_clips', 'reel_clones', 'beat_edits'], true)) {
+        if (! in_array($feature, self::COUNTABLE_FEATURES, true)) {
             return;
         }
         $this->increment($feature, $units);

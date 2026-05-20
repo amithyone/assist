@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Assist;
 
 use App\Http\Controllers\Controller;
+use App\Models\Plan;
 use App\Services\UsageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ class UsageController extends Controller
     public function check(Request $request, UsageService $usage): JsonResponse
     {
         $data = $request->validate([
-            'feature' => 'required|string|in:timelines,transcribe_clips,reel_clones,beat_edits',
+            'feature' => 'required|string|in:'.implode(',', Plan::FEATURES),
             'units' => 'integer|min:1|max:1000',
         ]);
 
@@ -28,7 +29,7 @@ class UsageController extends Controller
     public function record(Request $request, UsageService $usage): JsonResponse
     {
         $data = $request->validate([
-            'feature' => 'required|string',
+            'feature' => 'required|string|in:'.implode(',', Plan::FEATURES),
             'event' => 'required|string',
             'units' => 'integer|min:0|max:1000',
             'client_event_id' => 'nullable|uuid',
@@ -49,5 +50,10 @@ class UsageController extends Controller
             'event_id' => $event->id,
             'limits' => $usage->limitsSnapshot($request->user()),
         ]);
+    }
+
+    public function limits(Request $request, UsageService $usage): JsonResponse
+    {
+        return response()->json($usage->limitsSnapshot($request->user()));
     }
 }

@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <p style="margin-bottom: 16px;"><a href="{{ route('admin.assist.system') }}" class="btn">System / migrations</a></p>
+    @include('admin.partials.nav')
     <h1>Assist usage &amp; activity</h1>
     <form class="filters" method="get">
         <label>User
@@ -33,7 +33,7 @@
         <label>Feature
             <select name="feature">
                 <option value="">All</option>
-                @foreach(['timelines','transcribe_clips','reel_clones','beat_edits'] as $f)
+                @foreach(['preproduction','reel_clones','beat_edits','music_video_cuts','ai_edits','timelines','transcribe_clips'] as $f)
                     <option value="{{ $f }}" @selected(request('feature') === $f)>{{ $f }}</option>
                 @endforeach
             </select>

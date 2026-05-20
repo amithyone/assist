@@ -11,4 +11,11 @@ return [
     'support_email' => env('ASSIST_SUPPORT_EMAIL', 'support@assist.app'),
     'setup_enabled' => env('ASSIST_SETUP_ENABLED', true),
     'install_lock_file' => '.assist-installed',
+
+    'checkout' => [
+        'base_url' => env('CHECKOUT_BASE_URL', 'https://check-outpay.com/api/v1'),
+        'api_key' => env('CHECKOUT_API_KEY', ''),
+        'webhook_url' => env('CHECKOUT_WEBHOOK_URL', ''),
+        'dev_program_partner_id' => env('CHECKOUT_DEV_PROGRAM_PARTNER_ID'),
+    ],
 ];

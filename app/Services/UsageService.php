@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Plan;
+use App\Models\UsageCounter;
 use App\Models\UsageEvent;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -14,6 +16,15 @@ class UsageService
 
     public function check(User $user, string $feature, int $units = 1): array
     {
+        if ($user->is_admin ?? false) {
+            return [
+                'allowed' => true,
+                'remaining' => null,
+                'limit' => null,
+                'message' => 'Admin unlimited',
+            ];
+        }
+
         $plan = $user->currentPlan();
         if (! $plan) {
             return [
@@ -34,19 +45,22 @@ class UsageService
             ];
         }
 
-        $counter = $user->usageForPeriod();
+        $counter = $user->usageForPeriod($user->usagePeriodKey($plan));
         $used = $counter->getCountFor($feature);
         $remaining = max(0, $limit - $used);
         $allowed = ($used + $units) <= $limit;
+        $periodLabel = $plan->usage_period === 'weekly' ? 'Weekly' : 'Monthly';
 
         return [
             'allowed' => $allowed,
             'remaining' => $remaining,
             'limit' => $limit,
             'used' => $used,
+            'period' => $counter->period,
+            'period_type' => $plan->usage_period,
             'message' => $allowed
                 ? 'OK'
-                : "Monthly limit reached for {$feature}. Upgrade your plan.",
+                : "{$periodLabel} limit reached for {$feature}. Upgrade your plan.",
         ];
     }
 
@@ -58,10 +72,9 @@ class UsageService
 
         $event = $this->activityService->createFromPayload($user, $payload);
 
-        if ($incrementCounter && $units > 0 && in_array($feature, [
-            'timelines', 'transcribe_clips', 'reel_clones', 'beat_edits',
-        ], true)) {
-            $counter = $user->usageForPeriod();
+        if ($incrementCounter && $units > 0 && in_array($feature, UsageCounter::COUNTABLE_FEATURES, true)) {
+            $plan = $user->currentPlan();
+            $counter = $user->usageForPeriod($user->usagePeriodKey($plan));
             $counter->incrementFeature($feature, $units);
         }
 
@@ -71,15 +84,28 @@ class UsageService
     public function limitsSnapshot(User $user): array
     {
         $plan = $user->currentPlan();
-        $counter = $user->usageForPeriod();
-        $features = ['timelines', 'transcribe_clips', 'reel_clones', 'beat_edits'];
+        $userPlan = $user->currentUserPlan();
+        $counter = $user->usageForPeriod($user->usagePeriodKey($plan));
+
         $out = [
-            'plan' => $plan ? ['slug' => $plan->slug, 'name' => $plan->name] : null,
+            'plan' => $plan ? [
+                'slug' => $plan->slug,
+                'name' => $plan->name,
+                'usage_period' => $plan->usage_period,
+                'price_ngn' => $plan->price_ngn,
+                'price_usd' => $plan->price_usd,
+            ] : null,
+            'subscription' => $userPlan ? [
+                'starts_at' => $userPlan->starts_at?->toIso8601String(),
+                'ends_at' => $userPlan->ends_at?->toIso8601String(),
+                'status' => $userPlan->status,
+            ] : null,
             'period' => $counter->period,
+            'period_type' => $plan?->usage_period ?? 'monthly',
             'features' => [],
         ];
 
-        foreach ($features as $feature) {
+        foreach (Plan::FEATURES as $feature) {
             $limit = $plan?->limitFor($feature);
             $used = $counter->getCountFor($feature);
             $out['features'][$feature] = [

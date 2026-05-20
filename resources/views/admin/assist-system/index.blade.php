@@ -17,11 +17,7 @@
 </head>
 <body class="assist-body">
 <div class="admin-wrap">
-    <nav class="admin-nav">
-        <a href="{{ route('admin.assist.activity') }}">Activity</a>
-        <a href="{{ route('admin.assist.system') }}"><strong>System</strong></a>
-        <a href="{{ route('assist.home') }}">Public site</a>
-    </nav>
+    @include('admin.partials.nav')
 
     <h1 class="assist-h2 mb-4">Assist system</h1>
 
