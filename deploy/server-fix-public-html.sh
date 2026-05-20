@@ -18,7 +18,11 @@ if [ -f "$PUBLIC_HTML/index.php" ] && [ ! -d "$PUBLIC_HTML/.git" ] && [ ! -d "$P
   exit 0
 fi
 
-echo "==> Backing up broken public_html"
+echo "==> Backing up broken public_html (git clone must not live in web root)"
+if [ -d "$PUBLIC_HTML/.git" ]; then
+  echo "    WARNING: public_html is a git repo — disable Hostinger Git deploy to public_html in hPanel"
+  echo "    Use ~/assist-pack for git pull only. See deploy/HOSTINGER.md"
+fi
 mv "$PUBLIC_HTML" "${APP}/public_html.broken-${TS}"
 mkdir -p "$PUBLIC_HTML"
 

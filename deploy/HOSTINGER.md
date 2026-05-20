@@ -114,10 +114,30 @@ In **hPanel → Websites → Manage → Domains → Document root**, set:
 
 (This is usually already the default on Hostinger.)
 
+## Git / auto-deploy (important)
+
+**Never** connect Hostinger **Git** to `public_html` for assist.amithyone.com.
+
+If `public_html` is a clone of `github.com/amithyone/assist`, every `git push` can replace the web root with the integration pack (no `index.php`) → **403 Forbidden**.
+
+- **Correct:** clone/pull only in `~/assist-pack`, then run deploy scripts.
+- **Wrong:** Git deploy target = `domains/assist.amithyone.com/public_html`
+
+If the site breaks after a push:
+
+```bash
+bash ~/assist-pack/deploy/server-fix-public-html.sh
+```
+
+In **hPanel → Git** for assist.amithyone.com: remove the repository from `public_html`, or set deploy directory to `assist-pack` (not the web root).
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
+| 403 after git push | `public_html` was overwritten by Git deploy — run `server-fix-public-html.sh` and fix hPanel Git path |
 | 500 error | `chmod -R 775 storage bootstrap/cache` |
 | Composer missing | hPanel → PHP → enable Composer, or install locally |
 | `/assist/setup` 404 | Middleware + routes in `routes/web.php` |
