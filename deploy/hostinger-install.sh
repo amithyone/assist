@@ -12,9 +12,20 @@ PACK_DIR="${PACK_DIR:-$HOME/assist-pack}"
 REPO="${REPO:-https://github.com/amithyone/assist.git}"
 
 # Resolve public_html (symlink on Hostinger → domains/…/public_html)
+# For assist.amithyone.com always set explicitly, e.g.:
+#   APP_DIR=~/domains/assist.amithyone.com PUBLIC_HTML=~/domains/assist.amithyone.com/public_html bash hostinger-install.sh
+if [ -z "${PUBLIC_HTML:-}" ] && [ -d "$HOME/domains/assist.amithyone.com/public_html" ]; then
+  PUBLIC_HTML="$HOME/domains/assist.amithyone.com/public_html"
+  APP_DIR="${APP_DIR:-$HOME/domains/assist.amithyone.com}"
+fi
 PUBLIC_HTML="${PUBLIC_HTML:-$HOME/public_html}"
 PUBLIC_HTML=$(readlink -f "$PUBLIC_HTML" 2>/dev/null || echo "$PUBLIC_HTML")
 APP_DIR="${APP_DIR:-$(dirname "$PUBLIC_HTML")}"
+if [ -d "$PUBLIC_HTML/.git" ] && [ ! -f "$PUBLIC_HTML/index.php" ]; then
+  echo "ERROR: $PUBLIC_HTML looks like a git clone, not a Laravel web root."
+  echo "Run: bash assist-pack/deploy/server-fix-public-html.sh"
+  exit 1
+fi
 
 find_best_php() {
   local candidates=()

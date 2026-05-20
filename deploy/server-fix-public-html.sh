@@ -13,8 +13,8 @@ if [ ! -f "$APP/artisan" ]; then
   exit 1
 fi
 
-if [ -f "$PUBLIC_HTML/index.php" ] && ! grep -q 'assist-pack' "$PUBLIC_HTML/index.php" 2>/dev/null; then
-  echo "public_html already has index.php — nothing to fix"
+if [ -f "$PUBLIC_HTML/index.php" ] && [ ! -d "$PUBLIC_HTML/.git" ] && [ ! -d "$PUBLIC_HTML/app" ]; then
+  echo "public_html already OK — nothing to fix"
   exit 0
 fi
 
@@ -76,6 +76,8 @@ if [ -d "$APP/storage/app/public" ]; then
 fi
 
 chmod 644 "$PUBLIC_HTML/index.php" "$PUBLIC_HTML/.htaccess"
+echo "Do not git clone or git pull in public_html — Laravel web root only." > "$PUBLIC_HTML/DO_NOT_GIT_PULL_HERE.txt"
+rm -rf "$PUBLIC_HTML/.git" "$PUBLIC_HTML/app" "$PUBLIC_HTML/config" "$PUBLIC_HTML/database" "$PUBLIC_HTML/routes" "$PUBLIC_HTML/resources" "$PUBLIC_HTML/tests" "$PUBLIC_HTML/ui" "$PUBLIC_HTML/deploy" 2>/dev/null || true
 chmod -R ug+rwx "$APP/storage" "$APP/bootstrap/cache" 2>/dev/null || true
 
 cd "$APP"
