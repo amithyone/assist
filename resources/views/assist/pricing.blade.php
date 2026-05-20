@@ -54,8 +54,39 @@
                     @if ($isFree)
                         <a href="{{ route('assist.dashboard') }}" class="assist-btn assist-btn-outline assist-btn-block">Current</a>
                     @else
-                        <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'ngn'], $voucherQ)) }}" class="assist-btn {{ $highlight ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block">Upgrade (NGN)</a>
-                        <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'usd'], $voucherQ)) }}" class="assist-btn assist-btn-outline assist-btn-block" style="margin-top:8px;">Upgrade (USD)</a>
+                        @php
+                            $ngnGateways = $paymentGateways->gatewaysForCurrency('ngn');
+                            $usdGateways = $paymentGateways->gatewaysForCurrency('usd');
+                        @endphp
+                        @if (count($ngnGateways) > 0)
+                            <p class="assist-text-muted" style="font-size: 12px; margin-bottom: 8px;">Pay in NGN</p>
+                            @foreach ($ngnGateways as $gw)
+                                <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'ngn', 'gateway' => $gw], $voucherQ)) }}"
+                                   class="assist-btn {{ ($highlight && $loop->first) ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block"
+                                   @if($loop->index > 0) style="margin-top:8px;" @endif>
+                                    {{ $paymentGateways->gatewayLabel($gw) }}
+                                    @if ($paymentGateways->gatewayDescription($gw))
+                                        <span style="font-weight: 400; opacity: 0.85;"> — {{ $paymentGateways->gatewayDescription($gw) }}</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        @endif
+                        @if (count($usdGateways) > 0)
+                            <p class="assist-text-muted" style="font-size: 12px; margin: 12px 0 8px;">Pay in USD</p>
+                            @foreach ($usdGateways as $gw)
+                                <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'usd', 'gateway' => $gw], $voucherQ)) }}"
+                                   class="assist-btn assist-btn-outline assist-btn-block"
+                                   @if($loop->index > 0) style="margin-top:8px;" @endif>
+                                    {{ $paymentGateways->gatewayLabel($gw) }}
+                                    @if ($paymentGateways->gatewayDescription($gw))
+                                        <span style="font-weight: 400; opacity: 0.85;"> — {{ $paymentGateways->gatewayDescription($gw) }}</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        @endif
+                        @if (count($ngnGateways) === 0 && count($usdGateways) === 0)
+                            <p class="assist-text-muted" style="font-size: 13px;">Payments unavailable — contact support.</p>
+                        @endif
                     @endif
                 @else
                     <a href="{{ route('assist.register') }}" class="assist-btn {{ $highlight ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block">Get Started</a>

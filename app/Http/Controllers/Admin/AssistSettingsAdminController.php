@@ -33,11 +33,22 @@ class AssistSettingsAdminController extends Controller
     {
         $data = $request->validate([
             'payment_gateway' => 'required|in:checkoutpay,paystack',
+            'enabled_gateways' => 'nullable|array',
+            'enabled_gateways.*' => 'in:checkoutpay,paystack',
         ]);
-        $this->installer->savePaymentGateway($data['payment_gateway']);
+
+        $enabled = $data['enabled_gateways'] ?? [];
+        $this->installer->savePaymentGateways($enabled, $data['payment_gateway']);
         $this->installer->refreshConfig();
 
-        return back()->with('status', 'Default payment gateway saved.');
+        $count = count($enabled);
+
+        return back()->with(
+            'status',
+            $count > 1
+                ? "{$count} payment gateways enabled. Default: {$data['payment_gateway']}."
+                : 'Payment gateway settings saved.'
+        );
     }
 
     public function savePaystack(Request $request): RedirectResponse

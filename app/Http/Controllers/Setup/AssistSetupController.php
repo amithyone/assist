@@ -81,6 +81,8 @@ class AssistSetupController extends Controller
             'checkout_webhook_url' => 'nullable|url|max:500',
             'checkout_dev_program_partner_id' => 'nullable|integer',
             'payment_gateway' => 'nullable|in:checkoutpay,paystack',
+            'enabled_gateways' => 'nullable|array',
+            'enabled_gateways.*' => 'in:checkoutpay,paystack',
             'paystack_public_key' => 'nullable|string|max:255',
             'paystack_secret_key' => 'nullable|string|max:255',
             'paystack_webhook_url' => 'nullable|url|max:500',
@@ -134,7 +136,10 @@ class AssistSetupController extends Controller
                 (bool) ($data['fresh_install'] ?? true)
             );
 
-            $this->installer->savePaymentGateway($data['payment_gateway'] ?? 'checkoutpay');
+            $this->installer->savePaymentGateways(
+                $data['enabled_gateways'] ?? ['checkoutpay', 'paystack'],
+                $data['payment_gateway'] ?? 'checkoutpay'
+            );
             $this->installer->savePaystackEnvironment([
                 'public_key' => $data['paystack_public_key'] ?? '',
                 'secret_key' => $data['paystack_secret_key'] ?? '',

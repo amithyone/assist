@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Services\PaymentGatewayManager;
 use App\Services\SiteContentService;
 use Illuminate\View\View;
 
 class AssistPageController extends Controller
 {
     public function __construct(
-        protected SiteContentService $content
+        protected SiteContentService $content,
+        protected PaymentGatewayManager $gateways
     ) {}
 
     public function home(): View
@@ -23,7 +25,10 @@ class AssistPageController extends Controller
         $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
         $cms = $this->content->pageViewData('pricing');
 
-        return view('assist.pricing', array_merge($cms, ['plans' => $plans]));
+        return view('assist.pricing', array_merge($cms, [
+            'plans' => $plans,
+            'paymentGateways' => $this->gateways,
+        ]));
     }
 
     public function docs(): View

@@ -27,12 +27,11 @@ class AssistBillingController extends Controller
             return redirect()->route('assist.dashboard')->with('status', 'You are on the free plan.');
         }
 
-        $gateway = $gateways->gatewayForCurrency($currency);
+        $preferredGateway = $request->query('gateway');
         $voucher = null;
         $breakdown = null;
 
         try {
-            $gateways->assertConfigured($gateway);
             $code = $request->query('voucher');
             if ($code) {
                 $voucher = $vouchers->findValid($code, $user, $plan, $currency);
@@ -42,7 +41,14 @@ class AssistBillingController extends Controller
                     $currency
                 );
             }
-            $payment = $gateways->createPayment($user, $plan, $currency, $voucher, $breakdown);
+            $payment = $gateways->createPayment(
+                $user,
+                $plan,
+                $currency,
+                $voucher,
+                $breakdown,
+                $preferredGateway
+            );
         } catch (RuntimeException $e) {
             return redirect()
                 ->route('assist.pricing', array_filter(['voucher' => $request->query('voucher')]))

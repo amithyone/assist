@@ -187,8 +187,28 @@ class AssistInstallerService
 
     public function savePaymentGateway(string $gateway): void
     {
-        $gateway = in_array($gateway, ['checkoutpay', 'paystack'], true) ? $gateway : 'checkoutpay';
-        $this->envWriter->setMany(['PAYMENT_GATEWAY' => $gateway]);
+        $this->savePaymentGateways($this->paymentSettingsForAdmin()['enabled_gateways'] ?? ['checkoutpay', 'paystack'], $gateway);
+    }
+
+    /**
+     * @param  list<string>  $enabled
+     */
+    public function savePaymentGateways(array $enabled, string $default): void
+    {
+        $allowed = ['checkoutpay', 'paystack'];
+        $enabled = array_values(array_unique(array_intersect($enabled, $allowed)));
+        if ($enabled === []) {
+            $enabled = ['checkoutpay'];
+        }
+        $default = in_array($default, $allowed, true) ? $default : 'checkoutpay';
+        if (! in_array($default, $enabled, true)) {
+            $default = $enabled[0];
+        }
+
+        $this->envWriter->setMany([
+            'PAYMENT_GATEWAYS_ENABLED' => implode(',', $enabled),
+            'PAYMENT_GATEWAY' => $default,
+        ]);
     }
 
     /**
@@ -198,8 +218,11 @@ class AssistInstallerService
     {
         $appUrl = rtrim(config('app.url'), '/');
 
+        $enabled = config('assist.payment.enabled_gateways', ['checkoutpay', 'paystack']);
+
         return [
             'default_gateway' => config('assist.payment.default_gateway', 'checkoutpay'),
+            'enabled_gateways' => $enabled,
             'checkout' => [
                 'base_url' => config('assist.checkout.base_url'),
                 'api_key_set' => (bool) config('assist.checkout.api_key'),

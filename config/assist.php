@@ -70,6 +70,23 @@ return [
 
     'payment' => [
         'default_gateway' => env('PAYMENT_GATEWAY', 'checkoutpay'),
+        /** Comma-separated: checkoutpay,paystack — which gateways are offered at checkout */
+        'enabled_gateways' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PAYMENT_GATEWAYS_ENABLED', 'checkoutpay,paystack'))
+        ))),
+        'gateways' => [
+            'checkoutpay' => [
+                'label' => 'CheckoutPay',
+                'description' => 'Bank transfer',
+                'currencies' => ['ngn', 'usd'],
+            ],
+            'paystack' => [
+                'label' => 'Paystack',
+                'description' => 'Card, bank, USSD',
+                'currencies' => ['ngn'],
+            ],
+        ],
     ],
 
     'checkout' => [
