@@ -3,10 +3,12 @@
 use App\Http\Controllers\Admin\AssistActivityAdminController;
 use App\Http\Controllers\Admin\AssistDashboardAdminController;
 use App\Http\Controllers\Admin\AssistDownloadAdminController;
+use App\Http\Controllers\Admin\AssistPlansAdminController;
 use App\Http\Controllers\Admin\AssistSettingsAdminController;
 use App\Http\Controllers\Admin\AssistSitePagesAdminController;
 use App\Http\Controllers\Admin\AssistSystemAdminController;
 use App\Http\Controllers\Admin\AssistUsersAdminController;
+use App\Http\Controllers\Admin\AssistVouchersAdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,6 +24,15 @@ Route::get('/', [AssistDashboardAdminController::class, 'index'])->name('admin.a
 Route::get('site-pages', [AssistSitePagesAdminController::class, 'index'])->name('admin.assist.site-pages');
 Route::get('site-pages/{sitePage}/edit', [AssistSitePagesAdminController::class, 'edit'])->name('admin.assist.site-pages.edit');
 Route::put('site-pages/{sitePage}', [AssistSitePagesAdminController::class, 'update'])->name('admin.assist.site-pages.update');
+
+Route::get('plans', [AssistPlansAdminController::class, 'index'])->name('admin.assist.plans');
+Route::get('plans/{plan}/edit', [AssistPlansAdminController::class, 'edit'])->name('admin.assist.plans.edit');
+Route::put('plans/{plan}', [AssistPlansAdminController::class, 'update'])->name('admin.assist.plans.update');
+
+Route::get('vouchers', [AssistVouchersAdminController::class, 'index'])->name('admin.assist.vouchers');
+Route::post('vouchers', [AssistVouchersAdminController::class, 'store'])->name('admin.assist.vouchers.store');
+Route::put('vouchers/{voucher}', [AssistVouchersAdminController::class, 'update'])->name('admin.assist.vouchers.update');
+Route::delete('vouchers/{voucher}', [AssistVouchersAdminController::class, 'destroy'])->name('admin.assist.vouchers.destroy');
 
 Route::get('users', [AssistUsersAdminController::class, 'index'])->name('admin.assist.users');
 Route::put('users/{user}', [AssistUsersAdminController::class, 'update'])->name('admin.assist.users.update');

@@ -4,6 +4,8 @@
         ['route' => 'admin.assist.dashboard', 'label' => 'Overview', 'icon' => '◉'],
         ['route' => 'admin.assist.site-pages', 'label' => 'Site content', 'icon' => '✎'],
         ['route' => 'admin.assist.users', 'label' => 'Users', 'icon' => '◎'],
+        ['route' => 'admin.assist.plans', 'label' => 'Pricing & plans', 'icon' => '◈'],
+        ['route' => 'admin.assist.vouchers', 'label' => 'Vouchers', 'icon' => '%'],
         ['route' => 'admin.assist.settings', 'label' => 'Payments', 'icon' => '₦'],
         ['route' => 'admin.assist.downloads', 'label' => 'App release', 'icon' => '↓'],
         ['route' => 'admin.assist.activity', 'label' => 'Activity', 'icon' => '≡'],

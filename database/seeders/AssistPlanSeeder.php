@@ -36,6 +36,7 @@ class AssistPlanSeeder extends Seeder
             [
                 'name' => 'Pro',
                 'is_active' => true,
+                'is_featured' => true,
                 'usage_period' => 'monthly',
                 'price_ngn' => 5000,
                 'price_usd' => 5.00,

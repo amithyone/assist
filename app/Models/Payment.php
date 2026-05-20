@@ -15,6 +15,9 @@ class Payment extends Model
         'external_reference',
         'amount',
         'currency',
+        'voucher_code',
+        'original_amount',
+        'discount_amount',
         'status',
         'checkout_payload',
         'approved_at',
@@ -22,6 +25,8 @@ class Payment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'original_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'checkout_payload' => 'array',
         'approved_at' => 'datetime',
     ];

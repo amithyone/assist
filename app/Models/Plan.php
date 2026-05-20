@@ -33,6 +33,7 @@ class Plan extends Model
         'name',
         'limits',
         'is_active',
+        'is_featured',
         'price_ngn',
         'price_usd',
         'usage_period',
@@ -43,6 +44,7 @@ class Plan extends Model
     protected $casts = [
         'limits' => 'array',
         'is_active' => 'boolean',
+        'is_featured' => 'boolean',
         'price_usd' => 'decimal:2',
     ];
 

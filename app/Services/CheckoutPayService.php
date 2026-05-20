@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Voucher;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -13,10 +14,25 @@ class CheckoutPayService
     public function __construct(
         protected PaymentActivationService $activation
     ) {}
-    public function createPaymentRequest(User $user, Plan $plan, string $currency = 'ngn'): Payment
-    {
+    public function createPaymentRequest(
+        User $user,
+        Plan $plan,
+        string $currency = 'ngn',
+        ?Voucher $voucher = null,
+        ?array $priceBreakdown = null,
+    ): Payment {
         $currency = strtolower($currency);
-        $amount = $plan->priceForCurrency($currency);
+        $original = $plan->priceForCurrency($currency);
+        if ($original <= 0) {
+            throw new RuntimeException('This plan does not require payment.');
+        }
+
+        $breakdown = $priceBreakdown ?? [
+            'original' => $original,
+            'discount' => 0.0,
+            'final' => $original,
+        ];
+        $amount = (float) $breakdown['final'];
         if ($amount <= 0) {
             throw new RuntimeException('This plan does not require payment.');
         }
@@ -50,6 +66,9 @@ class CheckoutPayService
             'external_reference' => $externalRef,
             'amount' => $amount,
             'currency' => $currency,
+            'voucher_code' => $voucher?->code,
+            'original_amount' => $breakdown['original'],
+            'discount_amount' => $breakdown['discount'],
             'status' => 'pending',
             'checkout_payload' => $data,
         ]);

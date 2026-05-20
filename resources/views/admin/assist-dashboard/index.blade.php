@@ -23,7 +23,8 @@
     <h2>Quick links</h2>
     <div class="flex gap-4" style="flex-wrap: wrap;">
         <a href="{{ route('admin.assist.users') }}" class="assist-btn assist-btn-outline">Manage users</a>
-        <a href="{{ route('admin.assist.settings') }}" class="assist-btn assist-btn-primary">Payment setup</a>
+        <a href="{{ route('admin.assist.plans') }}" class="assist-btn assist-btn-primary">Pricing & plans</a>
+        <a href="{{ route('admin.assist.settings') }}" class="assist-btn assist-btn-outline">Payment setup</a>
         <a href="{{ route('admin.assist.downloads') }}" class="assist-btn assist-btn-outline">App release</a>
     </div>
 </div>

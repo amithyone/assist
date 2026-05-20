@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Services\PaymentGatewayManager;
+use App\Services\VoucherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,8 +13,12 @@ use RuntimeException;
 
 class AssistBillingController extends Controller
 {
-    public function upgrade(Request $request, string $plan, PaymentGatewayManager $gateways): RedirectResponse|View
-    {
+    public function upgrade(
+        Request $request,
+        string $plan,
+        PaymentGatewayManager $gateways,
+        VoucherService $vouchers,
+    ): RedirectResponse|View {
         $plan = Plan::where('slug', $plan)->where('is_active', true)->firstOrFail();
         $user = $request->user();
         $currency = strtolower($request->query('currency', $user->billing_currency ?? 'ngn'));
@@ -23,12 +28,25 @@ class AssistBillingController extends Controller
         }
 
         $gateway = $gateways->gatewayForCurrency($currency);
+        $voucher = null;
+        $breakdown = null;
 
         try {
             $gateways->assertConfigured($gateway);
-            $payment = $gateways->createPayment($user, $plan, $currency);
+            $code = $request->query('voucher');
+            if ($code) {
+                $voucher = $vouchers->findValid($code, $user, $plan, $currency);
+                $breakdown = $vouchers->priceBreakdown(
+                    $plan->priceForCurrency($currency),
+                    $voucher,
+                    $currency
+                );
+            }
+            $payment = $gateways->createPayment($user, $plan, $currency, $voucher, $breakdown);
         } catch (RuntimeException $e) {
-            return redirect()->route('assist.pricing')->withErrors(['billing' => $e->getMessage()]);
+            return redirect()
+                ->route('assist.pricing', array_filter(['voucher' => $request->query('voucher')]))
+                ->withErrors(['billing' => $e->getMessage()]);
         }
 
         if ($payment->gateway === 'paystack' && ! empty($payment->checkout_payload['authorization_url'])) {

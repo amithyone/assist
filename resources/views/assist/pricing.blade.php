@@ -11,12 +11,22 @@
         <p class="assist-text-muted" style="max-width: 36rem; margin: 0 auto;">
             {{ $i['subheading'] ?? 'Pay in Naira (Nigeria) or USD (international). Plans cap automated runs — not your creativity in Resolve.' }}
         </p>
+        @auth
+            <form method="get" action="{{ route('assist.pricing') }}" class="assist-pricing-voucher" style="max-width: 22rem; margin: 24px auto 0; display: flex; gap: 8px;">
+                <input type="text" name="voucher" class="assist-input" placeholder="Voucher code" value="{{ request('voucher') }}" style="flex: 1;">
+                <button type="submit" class="assist-btn assist-btn-outline assist-btn-sm">Apply</button>
+            </form>
+            @error('billing')
+                <p class="assist-error" style="margin-top: 8px;">{{ $message }}</p>
+            @enderror
+        @endauth
     </div>
     <div class="assist-container assist-grid-3">
         @foreach ($plans as $plan)
             @php
-                $highlight = $plan->slug === 'pro';
+                $highlight = (bool) $plan->is_featured;
                 $isFree = $plan->slug === 'free';
+                $voucherQ = request('voucher') ? ['voucher' => request('voucher')] : [];
             @endphp
             <div class="glass-panel assist-pricing-card {{ $highlight ? 'highlight' : '' }}" style="position: relative;">
                 @if ($highlight)
@@ -44,8 +54,8 @@
                     @if ($isFree)
                         <a href="{{ route('assist.dashboard') }}" class="assist-btn assist-btn-outline assist-btn-block">Current</a>
                     @else
-                        <a href="{{ route('assist.billing.upgrade', ['plan' => $plan->slug, 'currency' => 'ngn']) }}" class="assist-btn {{ $highlight ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block">Upgrade (NGN)</a>
-                        <a href="{{ route('assist.billing.upgrade', ['plan' => $plan->slug, 'currency' => 'usd']) }}" class="assist-btn assist-btn-outline assist-btn-block" style="margin-top:8px;">Upgrade (USD)</a>
+                        <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'ngn'], $voucherQ)) }}" class="assist-btn {{ $highlight ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block">Upgrade (NGN)</a>
+                        <a href="{{ route('assist.billing.upgrade', array_merge(['plan' => $plan->slug, 'currency' => 'usd'], $voucherQ)) }}" class="assist-btn assist-btn-outline assist-btn-block" style="margin-top:8px;">Upgrade (USD)</a>
                     @endif
                 @else
                     <a href="{{ route('assist.register') }}" class="assist-btn {{ $highlight ? 'assist-btn-primary' : 'assist-btn-outline' }} assist-btn-block">Get Started</a>

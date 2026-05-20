@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Voucher;
 use RuntimeException;
 
 class PaymentGatewayManager
@@ -29,14 +30,19 @@ class PaymentGatewayManager
         return $gateway;
     }
 
-    public function createPayment(User $user, Plan $plan, string $currency = 'ngn'): Payment
-    {
+    public function createPayment(
+        User $user,
+        Plan $plan,
+        string $currency = 'ngn',
+        ?Voucher $voucher = null,
+        ?array $priceBreakdown = null,
+    ): Payment {
         $currency = strtolower($currency);
         $gateway = $this->gatewayForCurrency($currency);
 
         return match ($gateway) {
-            'paystack' => $this->paystack->initializeTransaction($user, $plan, $currency),
-            default => $this->checkoutPay->createPaymentRequest($user, $plan, $currency),
+            'paystack' => $this->paystack->initializeTransaction($user, $plan, $currency, $voucher, $priceBreakdown),
+            default => $this->checkoutPay->createPaymentRequest($user, $plan, $currency, $voucher, $priceBreakdown),
         };
     }
 

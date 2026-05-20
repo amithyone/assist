@@ -12,6 +12,10 @@
         @elseif ($payment->gateway === 'paystack')
             <p class="assist-text-muted mb-4">Complete payment securely with Paystack (card, bank, USSD).</p>
             <div class="glass-panel" style="padding: 24px; border-radius: 16px;">
+                @if ($payment->voucher_code && $payment->discount_amount > 0)
+                    <p><strong>Was:</strong> ₦{{ number_format($payment->original_amount, 2) }}</p>
+                    <p><strong>Voucher:</strong> {{ $payment->voucher_code }} (−₦{{ number_format($payment->discount_amount, 2) }})</p>
+                @endif
                 <p><strong>Amount:</strong> ₦{{ number_format($payment->amount, 2) }}</p>
                 <p><strong>Reference:</strong> {{ $payment->transaction_id }}</p>
             </div>
@@ -23,6 +27,10 @@
         @else
             <p class="assist-text-muted mb-4">Transfer the exact amount to the account below. Your plan activates automatically when payment is approved.</p>
             <div class="glass-panel" style="padding: 24px; border-radius: 16px;">
+                @if ($payment->voucher_code && $payment->discount_amount > 0)
+                    <p><strong>Was:</strong> {{ $payment->currency === 'usd' ? '$' : '₦' }}{{ number_format($payment->original_amount, 2) }}</p>
+                    <p><strong>Voucher:</strong> {{ $payment->voucher_code }} (−{{ $payment->currency === 'usd' ? '$' : '₦' }}{{ number_format($payment->discount_amount, 2) }})</p>
+                @endif
                 <p><strong>Amount:</strong> {{ $payment->currency === 'usd' ? '$' : '₦' }}{{ number_format($payment->amount, 2) }}</p>
                 <p><strong>Bank:</strong> {{ $bank['bank_name'] ?? '—' }}</p>
                 <p><strong>Account number:</strong> {{ $bank['account_number'] ?? '—' }}</p>

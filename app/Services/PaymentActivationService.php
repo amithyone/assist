@@ -8,6 +8,10 @@ use App\Models\UserPlan;
 
 class PaymentActivationService
 {
+    public function __construct(
+        protected VoucherService $vouchers
+    ) {}
+
     public function approve(Payment $payment, array $extraPayload = []): Payment
     {
         if ($payment->status === 'approved') {
@@ -38,6 +42,8 @@ class PaymentActivationService
             'starts_at' => now(),
             'ends_at' => $plan->slug === 'free' ? null : now()->addMonth(),
         ]);
+
+        $this->vouchers->recordRedemption($payment->voucher_code);
 
         return $payment;
     }
