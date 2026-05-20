@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\AssistAuthController;
 use App\Http\Controllers\Web\AssistBillingController;
+use App\Http\Controllers\Web\AssistDownloadController;
 use App\Http\Controllers\Web\AssistPageController;
 use App\Http\Controllers\Webhooks\CheckoutPayWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/webhooks/checkoutpay', [CheckoutPayWebhookController::class, 'handle'])
     ->name('assist.webhooks.checkoutpay');
+
+Route::get('/download/assist', [AssistDownloadController::class, 'download'])->name('assist.download.app');
 
 Route::get('/', [AssistPageController::class, 'home'])->name('assist.home');
 Route::get('/pricing', [AssistPageController::class, 'pricing'])->name('assist.pricing');

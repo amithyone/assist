@@ -1,5 +1,6 @@
 @php
     $route = request()->route()?->getName() ?? '';
+    $assistDownloadUrl = app(\App\Services\AssistAppReleaseService::class)->downloadUrl();
 @endphp
 <nav class="assist-nav">
     <a href="{{ route('assist.home') }}" class="assist-nav-brand">
@@ -9,7 +10,7 @@
     <div class="assist-nav-links">
         <a href="{{ route('assist.home') }}" class="{{ $route === 'assist.home' ? 'active' : '' }}">Features</a>
         <a href="{{ route('assist.pricing') }}" class="{{ $route === 'assist.pricing' ? 'active' : '' }}">Pricing</a>
-        <a href="{{ config('assist.download_url', '#download') }}" id="download">Download</a>
+        <a href="{{ $assistDownloadUrl }}" id="download">Download</a>
         <a href="{{ route('assist.docs') }}" class="{{ $route === 'assist.docs' ? 'active' : '' }}">Docs</a>
     </div>
     <div class="assist-nav-actions">

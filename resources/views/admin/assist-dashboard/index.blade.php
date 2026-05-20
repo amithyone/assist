@@ -9,6 +9,7 @@
 @include('admin.partials.nav')
 <div class="admin-wrap" style="max-width: 960px; margin: 0 auto;">
     <h1 style="font-size: 28px; margin-bottom: 24px;">Admin overview</h1>
+    <p style="margin-bottom: 24px;"><a href="{{ route('admin.assist.downloads') }}" style="color: #818cf8;">Upload macOS app for public download →</a></p>
     @if (session('status'))
         <p style="color: #34d399; margin-bottom: 16px;">{{ session('status') }}</p>
     @endif

@@ -6,7 +6,7 @@
             Assist sits beside DaVinci Resolve and builds your first timeline — dialogue cuts, music montages, reel clones, and beat-synced edits — while you keep creative control.
         </p>
         <div class="assist-hero-actions">
-            <a href="{{ config('assist.download_url', '#download') }}" class="assist-btn assist-btn-primary">Download for Mac</a>
+            <a href="{{ app(\App\Services\AssistAppReleaseService::class)->downloadUrl() }}" class="assist-btn assist-btn-primary">Download for Mac</a>
             <a href="{{ route('assist.docs') }}" class="assist-btn assist-btn-outline">See how it works</a>
         </div>
     </div>

@@ -43,7 +43,7 @@
             </div>
         @endif
         <div style="margin-top: 48px; display: flex; flex-wrap: gap: 16px;">
-            <a href="{{ config('assist.download_url') }}" class="assist-btn assist-btn-primary">Download Assist for Mac</a>
+            <a href="{{ app(\App\Services\AssistAppReleaseService::class)->downloadUrl() }}" class="assist-btn assist-btn-primary">Download Assist for Mac</a>
             @if (($limits['plan']['slug'] ?? 'free') !== 'unlimited')
                 <a href="{{ route('assist.pricing') }}" class="assist-btn assist-btn-outline">Upgrade plan</a>
             @endif

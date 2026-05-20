@@ -98,7 +98,9 @@ Route::middleware(['auth', 'assist.admin'])->prefix('admin/assist')->group(funct
 });
 ```
 
-Admin pages: **Overview** (`/admin/assist`), **Users** (`/admin/assist/users`), **Activity**, **System** (migrations/seed without SSH).
+Admin pages: **Overview** (`/admin/assist`), **Users** (`/admin/assist/users`), **App download** (`/admin/assist/downloads` — upload `.dmg`/`.zip`), **Activity**, **System** (migrations/seed without SSH).
+
+Public download URL after upload: `GET /download/assist` (also copied to `public/assist/downloads/` for static serving).
 
 ## Plans (seeded)
 

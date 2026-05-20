@@ -14,7 +14,7 @@
             <ul>
                 <li><a href="{{ route('assist.home') }}">Features</a></li>
                 <li><a href="{{ route('assist.pricing') }}">Pricing</a></li>
-                <li><a href="{{ config('assist.download_url', '#') }}">Download</a></li>
+                <li><a href="{{ app(\App\Services\AssistAppReleaseService::class)->downloadUrl() }}">Download</a></li>
                 <li><a href="{{ route('assist.docs') }}">Documentation</a></li>
             </ul>
         </div>

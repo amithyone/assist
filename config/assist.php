@@ -8,6 +8,13 @@ return [
     'activity_sync_max_batch' => 50,
     'app_version' => env('ASSIST_APP_VERSION', '1.0.0'),
     'download_url' => env('ASSIST_DOWNLOAD_URL', '#download'),
+
+    'release' => [
+        'storage_dir' => 'assist-releases',
+        'public_subdir' => 'assist/downloads',
+        'max_upload_mb' => (int) env('ASSIST_RELEASE_MAX_MB', 500),
+        'max_upload_kb' => (int) env('ASSIST_RELEASE_MAX_MB', 500) * 1024,
+    ],
     'support_email' => env('ASSIST_SUPPORT_EMAIL', 'support@assist.app'),
     'setup_enabled' => env('ASSIST_SETUP_ENABLED', true),
     'install_lock_file' => '.assist-installed',
